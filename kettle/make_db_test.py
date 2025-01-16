@@ -16,17 +16,16 @@
 
 """Tests for make_db."""
 
-import time
 import sys
 import unittest
 
 import make_db
 import model
 
-
+static_epoch = 1641585162
 
 TEST_BUCKETS_DATA = {
-    'gs://kubernetes-jenkins/logs/': {'prefix': ''},
+    'gs://kubernetes-ci-logs/logs/': {'prefix': ''},
     'gs://bucket1/': {'prefix': 'bucket1_prefix'},
     'gs://bucket2/': {'prefix': 'bucket2_prefix'}
 }
@@ -34,8 +33,8 @@ TEST_BUCKETS_DATA = {
 
 class MockedClient(make_db.GCSClient):
     """A GCSClient with stubs for external interactions."""
-    NOW = int(time.time())
-    LOG_DIR = 'gs://kubernetes-jenkins/logs/'
+    NOW = static_epoch
+    LOG_DIR = 'gs://kubernetes-ci-logs/logs/'
     JOB_DIR = LOG_DIR + 'fake/123/'
     ART_DIR = JOB_DIR + 'artifacts/'
     lists = {
@@ -43,7 +42,7 @@ class MockedClient(make_db.GCSClient):
         LOG_DIR + 'fake/': [JOB_DIR, LOG_DIR + 'fake/122/'],
         LOG_DIR + 'bad-latest/': [LOG_DIR + 'bad-latest/6/'],
         LOG_DIR + 'latest/': [LOG_DIR + 'latest/4/', LOG_DIR + 'latest/3/'],
-        'gs://kubernetes-jenkins/pr-logs/directory/': [],
+        'gs://kubernetes-ci-logs/pr-logs/directory/': [],
         ART_DIR: [ART_DIR + 'junit_01.xml'],
         ART_DIR.replace('123', '122'): [],
     }
@@ -77,7 +76,7 @@ class GCSClientTest(unittest.TestCase):
 
     # pylint: disable=protected-access
 
-    JOBS_DIR = 'gs://kubernetes-jenkins/logs/'
+    JOBS_DIR = 'gs://kubernetes-ci-logs/logs/'
 
     def setUp(self):
         self.client = MockedClient(self.JOBS_DIR)
@@ -86,7 +85,7 @@ class GCSClientTest(unittest.TestCase):
         junits = self.client.get_junits_from_build(self.JOBS_DIR + 'fake/123')
         self.assertEqual(
             sorted(junits),
-            ['gs://kubernetes-jenkins/logs/fake/123/artifacts/junit_01.xml'])
+            ['gs://kubernetes-ci-logs/logs/fake/123/artifacts/junit_01.xml'])
 
     def test_get_builds_normal_list(self):
         # normal case: lists a directory
@@ -124,6 +123,15 @@ class GCSClientTest(unittest.TestCase):
         self.client.metadata = {'exclude_jobs': ['fake']}
         self.assertEqual([], list(self.client.get_builds(set())))
 
+    def test_get_builds_exclude_list_match_using_regexp(self):
+        # special case: job is in excluded list
+        self.client.metadata = {'exclude_jobs': ['.*(flaky|flake|fake).*']}
+        self.assertEqual([], list(self.client.get_builds(set())))
+        # special case: job is in excluded list
+        self.client.metadata = {'exclude_jobs': ['.*(flaky|flake).*']}
+        self.assertEqual([('fake', '123'), ('fake', '122')], list(self.client.get_builds(set())))
+
+
 class MainTest(unittest.TestCase):
     """End-to-end test of the main function's output."""
     JOBS_DIR = GCSClientTest.JOBS_DIR
@@ -151,7 +159,7 @@ class MainTest(unittest.TestCase):
             expected = self.get_expected_builds()
         if db is None:
             db = model.Database(':memory:')
-        make_db.main(db, {self.JOBS_DIR: {}}, threads, True, sys.maxsize, client)
+        make_db.main(db, {self.JOBS_DIR: {}}, threads, True, sys.maxsize, False, client)
 
         result = {path: (started, finished, db.test_results_for_build(path))
                   for _rowid, path, started, finished in db.get_builds()}
@@ -160,6 +168,7 @@ class MainTest(unittest.TestCase):
         return db
 
     def test_clean(self):
+        self.maxDiff = None
         for threads in [1, 32]:
             self.assert_main_output(threads)
 
@@ -174,15 +183,15 @@ class MainTest(unittest.TestCase):
         '''
 
         class MockedClientNewer(MockedClient):
-            NOW = int(time.time())
-            LOG_DIR = 'gs://kubernetes-jenkins/logs/'
+            NOW = static_epoch
+            LOG_DIR = 'gs://kubernetes-ci-logs/logs/'
             JOB_DIR = LOG_DIR + 'fake/124/'
             ART_DIR = JOB_DIR + 'artifacts/'
             lists = {
                 LOG_DIR: [LOG_DIR + 'fake/'],
                 LOG_DIR + 'fake/': [JOB_DIR, LOG_DIR + 'fake/123/'],
                 ART_DIR: [ART_DIR + 'junit_01.xml'],
-                'gs://kubernetes-jenkins/pr-logs/directory/': [],
+                'gs://kubernetes-ci-logs/pr-logs/directory/': [],
             }
             gets = {
                 JOB_DIR + 'finished.json': {'timestamp': NOW},

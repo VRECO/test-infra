@@ -20,7 +20,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -41,7 +40,7 @@ type localCluster struct {
 var _ deployer = localCluster{}
 
 func newLocalCluster() *localCluster {
-	tempDir, err := ioutil.TempDir("", "kubetest-local")
+	tempDir, err := os.MkdirTemp("", "kubetest-local")
 	if err != nil {
 		log.Fatal("unable to create temp directory")
 	}
@@ -177,8 +176,13 @@ func (n localCluster) Down() error {
 		"kubelet",
 	}
 
+	// Waiting 30 seconds for pods stopped with terminationGracePeriod:30
+	// otherwise pods containers will remain and cannot be deleted before
+	// timeout has expired.
+	time.Sleep(30 * time.Second)
+
 	// make sure all containers are removed
-	if err := control.FinishRunning(exec.Command("sh", "-c", `docker ps -aq | xargs docker rm -fv`)); err != nil {
+	if err := control.FinishRunning(exec.Command("sh", "-c", `docker ps -aq | xargs -r docker rm -fv`)); err != nil {
 		log.Printf("unable to cleanup containers in docker: %v", err)
 	}
 

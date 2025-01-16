@@ -24,17 +24,15 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 readonly OUTPUT="${SCRIPT_DIR}/sig-k8s-infra-apps.yaml"
 # list of subdirs in kubernetes/k8s.io/apps
 readonly APPS=(
+    codesearch
     elekto
     gcsweb
     kettle
     k8s-io
     kubernetes-external-secrets
     perfdash
-    prow
     publishing-bot
-    sippy
     slack-infra
-    triageparty-release
 )
 
 cat >"${OUTPUT}" <<EOF

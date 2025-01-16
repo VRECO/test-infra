@@ -24,9 +24,9 @@ import (
 	"github.com/GoogleCloudPlatform/testgrid/config/yamlcfg"
 	"github.com/GoogleCloudPlatform/testgrid/pb/config"
 
-	prowapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
-	prowConfig "k8s.io/test-infra/prow/config"
-	"k8s.io/test-infra/prow/pjutil"
+	prowapi "sigs.k8s.io/prow/pkg/apis/prowjobs/v1"
+	prowConfig "sigs.k8s.io/prow/pkg/config"
+	"sigs.k8s.io/prow/pkg/pjutil"
 )
 
 const ProwDefaultGCSPath = "pathPrefix/"
@@ -341,6 +341,7 @@ func Test_applySingleProwjobAnnotations(t *testing.T) {
 				"testgrid-in-cell-metric":            "haunted-house",
 				"testgrid-disable-prowjob-analysis":  "true",
 				"testgrid-base-options":              "exclude-filter-by-regex=^kubetest.Test$",
+				"testgrid-broken-column-threshold":   "0.5",
 			},
 			expectedConfig: config.Configuration{
 				TestGroups: []*config.TestGroup{
@@ -348,11 +349,10 @@ func Test_applySingleProwjobAnnotations(t *testing.T) {
 						Name:                   ProwJobName,
 						GcsPrefix:              ProwDefaultGCSPath + "logs/" + ProwJobName,
 						NumColumnsRecent:       13,
-						NumFailuresToAlert:     4,
-						AlertStaleResultsHours: 24,
 						DaysOfResults:          30,
 						ShortTextMetric:        "haunted-house",
 						DisableProwjobAnalysis: true,
+						NumFailuresToAlert:     4,
 					},
 				},
 				Dashboards: []*config.Dashboard{
@@ -364,7 +364,9 @@ func Test_applySingleProwjobAnnotations(t *testing.T) {
 								Description:   ProwJobDefaultDescription + "\nprowjob_description: spooky scary",
 								TestGroupName: ProwJobName,
 								AlertOptions: &config.DashboardTabAlertOptions{
-									AlertMailToAddresses: "ghost@example.com",
+									AlertMailToAddresses:   "ghost@example.com",
+									NumFailuresToAlert:     4,
+									AlertStaleResultsHours: 24,
 								},
 								CodeSearchUrlTemplate: &config.LinkTemplate{
 									Url: "https://github.com/test/repo/compare/<start-custom-0>...<end-custom-0>",
@@ -372,7 +374,8 @@ func Test_applySingleProwjobAnnotations(t *testing.T) {
 								OpenBugTemplate: &config.LinkTemplate{
 									Url: "https://github.com/test/repo/issues/",
 								},
-								BaseOptions: "exclude-filter-by-regex=^kubetest.Test$",
+								BaseOptions:           "exclude-filter-by-regex=^kubetest.Test$",
+								BrokenColumnThreshold: 0.5,
 							},
 						},
 					},

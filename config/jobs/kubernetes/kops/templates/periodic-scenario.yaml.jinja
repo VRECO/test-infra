@@ -1,13 +1,15 @@
 
 - name: {{job_name}}
+  cluster: {{build_cluster}}
   cron: '{{cron}}'
   labels:
     preset-service-account: "true"
     preset-aws-ssh: "true"
+    {%- if build_cluster == "default" %}
     preset-aws-credential: "true"
-    preset-bazel-scratch-dir: "true"
-    preset-bazel-remote-cache-enabled: "true"
+    {%- endif %}
     preset-dind-enabled: "true"
+  max_concurrency: 1
   decorate: true
   decoration_config:
     timeout: {{job_timeout}}
@@ -18,6 +20,9 @@
     workdir: true
     path_alias: k8s.io/kops
   spec:
+    {%- if build_cluster != "default" %}
+    serviceAccountName: prowjob-default-sa
+    {%- endif %}
     containers:
     - command:
       - runner.sh
@@ -32,9 +37,10 @@
       imagePullPolicy: Always
       resources:
         limits:
+          cpu: "4"
           memory: 6Gi
         requests:
-          cpu: "2"
+          cpu: "4"
           memory: 6Gi
       securityContext:
         privileged: true

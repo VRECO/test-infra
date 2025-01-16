@@ -20,7 +20,7 @@ metadata:
   labels:
     app: needs-rebase
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: needs-rebase
@@ -32,7 +32,7 @@ spec:
       terminationGracePeriodSeconds: 180
       containers:
       - name: needs-rebase
-        image: gcr.io/k8s-prow/needs-rebase:v20220106-1ddb959ab0
+        image: us-docker.pkg.dev/k8s-infra-prow/images/needs-rebase:v20240802-66b115076
         imagePullPolicy: Always
         args:
         - --dry-run=false

@@ -6,6 +6,7 @@
 postsubmits:
   kubernetes-sigs/hierarchical-namespaces:
   - name: hnc-postsubmit-test
+    cluster: eks-prow-build-cluster
     annotations:
       testgrid-dashboards: wg-multi-tenancy-hnc
       testgrid-tab-name: postsubmit-tests
@@ -22,28 +23,31 @@ postsubmits:
       preset-dind-enabled: "true"
     spec:
       containers:
-      - image: gcr.io/k8s-staging-test-infra/krte:v20211217-ea95cec1d4-master
+      - image: gcr.io/k8s-staging-test-infra/krte:v20241230-3006692a6f-master
         # workdir appears to be the base of the cloned repo
         command: ["wrapper.sh", "hack/prow-run-e2e.sh"]
         securityContext:
           privileged: true # Required for docker-in-docker
         resources:
+          limits:
+            cpu: 2
+            memory: 4Gi
           requests:
-            cpu: 1
-            memory: "4Gi"
+            cpu: 2
+            memory: 4Gi
 
 # The periodics are the same as the postsubmits, but we run them occasionally
 # to ensure there's no flakiness during periods where there aren't lots of
 # submissions. Please keep them as closely in sync as possible.
 periodics:
 - name: hnc-periodic-test
+  cluster: eks-prow-build-cluster
   annotations:
     testgrid-dashboards: wg-multi-tenancy-hnc
     testgrid-tab-name: periodic-e2e-tests
     testgrid-alert-email: kubernetes-hnc-dev+alerts@googlegroups.com
     testgrid-num-failures-to-alert: "1"
   interval: 24h
-  always_run: true # Different from the postsubmit; copied from kind periodics
   decorate: true
   decoration_config:
     timeout: 1h
@@ -59,11 +63,14 @@ periodics:
     path_alias: sigs.k8s.io/hierarchical-namespaces
   spec:
     containers:
-    - image: gcr.io/k8s-staging-test-infra/krte:v20211217-ea95cec1d4-master
+    - image: gcr.io/k8s-staging-test-infra/krte:v20241230-3006692a6f-master
       command: ["wrapper.sh", "hack/prow-run-e2e.sh"]
       securityContext:
         privileged: true # Required for docker-in-docker
       resources:
+        limits:
+          cpu: 2
+          memory: 4Gi
         requests:
-          cpu: 1
-          memory: "4Gi"
+          cpu: 2
+          memory: 4Gi

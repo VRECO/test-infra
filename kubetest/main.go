@@ -22,9 +22,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -35,7 +33,7 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
-	"sigs.k8s.io/boskos/client"
+	"k8s.io/test-infra/kubetest/boskos/client"
 
 	"k8s.io/test-infra/kubetest/conformance"
 	"k8s.io/test-infra/kubetest/kind"
@@ -105,7 +103,6 @@ type options struct {
 	nodeArgs                string
 	nodeTestArgs            string
 	nodeTests               bool
-	outputDir               string
 	preTestCmd              string
 	postTestCmd             string
 	provider                string
@@ -113,10 +110,10 @@ type options struct {
 	runtimeConfig           string
 	save                    string
 	skew                    bool
+	skipDumpClusterLogs     bool
 	skipRegex               string
 	soak                    bool
 	soakDuration            time.Duration
-	sshUser                 string
 	stage                   stageStrategy
 	storageTestDriverPath   string
 	test                    bool
@@ -183,6 +180,7 @@ func defineFlags() *options {
 	flag.StringVar(&o.stage.dockerRegistry, "registry", "", "Push images to the specified docker registry (e.g. gcr.io/a-test-project)")
 	flag.StringVar(&o.save, "save", "", "Save credentials to gs:// path on --up if set (or load from there if not --up)")
 	flag.BoolVar(&o.skew, "skew", false, "If true, run tests in another version at ../kubernetes/kubernetes_skew")
+	flag.BoolVar(&o.skipDumpClusterLogs, "skip-dump-cluster-logs", false, "If true, skip the cluster log dumping")
 	flag.BoolVar(&o.soak, "soak", false, "If true, job runs in soak mode")
 	flag.DurationVar(&o.soakDuration, "soak-duration", 7*24*time.Hour, "Maximum age of a soak cluster before it gets recycled")
 	flag.Var(&o.stage, "stage", "Upload binaries to gs://bucket/devel/job-suffix if set")
@@ -283,9 +281,6 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Printf("Running kubetest version: %s\n", gitTag)
 
-	// Initialize global pseudo random generator. Initializing it to select random AWS Zones.
-	rand.Seed(time.Now().UnixNano())
-
 	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
 	o := defineFlags()
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
@@ -352,12 +347,17 @@ func complete(o *options) error {
 	if o.logexporterGCSPath != "" {
 		o.testArgs += fmt.Sprintf(" --logexporter-gcs-path=%s", o.logexporterGCSPath)
 	}
-	if err := prepare(o); err != nil {
+	if err := control.XMLWrap(&suite, "Prepare", func() error { return prepare(o) }); err != nil {
 		return fmt.Errorf("failed to prepare test environment: %w", err)
 	}
 	// Get the deployer before we acquire k8s so any additional flag
 	// verifications happen early.
-	deploy, err := getDeployer(o)
+	var deploy deployer
+	err := control.XMLWrap(&suite, "GetDeployer", func() error {
+		d, err := getDeployer(o)
+		deploy = d
+		return err
+	})
 	if err != nil {
 		return fmt.Errorf("error creating deployer: %w", err)
 	}
@@ -486,7 +486,7 @@ func acquireKubernetes(o *options, d deployer) error {
 func findVersion() string {
 	// The version may be in a version file
 	if _, err := os.Stat("version"); err == nil {
-		b, err := ioutil.ReadFile("version")
+		b, err := os.ReadFile("version")
 		if err == nil {
 			return strings.TrimSpace(string(b))
 		}
@@ -509,7 +509,7 @@ func findVersion() string {
 
 // maybeMergeMetadata will add new keyvals into the map; quietly eats errors.
 func maybeMergeJSON(meta map[string]string, path string) {
-	if data, err := ioutil.ReadFile(path); err == nil {
+	if data, err := os.ReadFile(path); err == nil {
 		json.Unmarshal(data, &meta)
 	}
 }
@@ -805,7 +805,7 @@ func prepareGcp(o *options) error {
 	log.Printf("Checking presence of public key in %s", o.gcpProject)
 	if out, err := control.Output(exec.Command("gcloud", "compute", "--project="+o.gcpProject, "project-info", "describe")); err != nil {
 		return err
-	} else if b, err := ioutil.ReadFile(pk); err != nil {
+	} else if b, err := os.ReadFile(pk); err != nil {
 		return err
 	} else if !strings.Contains(string(out), string(b)) {
 		log.Print("Uploading public ssh key to project metadata...")
@@ -1009,7 +1009,7 @@ func prepareGinkgoParallel(v *ginkgoParallelValue) error {
 }
 
 func publish(pub string) error {
-	v, err := ioutil.ReadFile("version")
+	v, err := os.ReadFile("version")
 	if err != nil {
 		return err
 	}

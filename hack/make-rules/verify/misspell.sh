@@ -53,6 +53,7 @@ if find -L . -type f -not \( \
     -o -path './_output/*' \
     -o -path './_artifacts/*' \
     -o -path './bazel-*/*' \
+    -o -path './.python_virtual_env/*' \
     \) -prune \
     \) -exec grep -Hn 'Git'hub '{}' '+' ; then
   echo "Failed"
@@ -60,7 +61,7 @@ if find -L . -type f -not \( \
 fi
 
 
-trap 'echo ERROR: bad spelling, fix with hack/update-spelling.sh' ERR
+trap 'echo ERROR: bad spelling, fix with hack/update/misspell.sh' ERR
 
 echo "Check for spelling..."
 # Unit test: lang auge (remove space)
@@ -77,8 +78,10 @@ find -L . -type f -not \( \
     -o -path './_output/*' \
     -o -path './_artifacts/*' \
     -o -path './bazel-*/*' \
+    -o -path './hack/tools/go.mod' \
     -o -path './hack/tools/go.sum' \
+    -o -path './.python_virtual_env/*' \
     \) -prune \
-    \) -exec "$MISSPELL" '{}' '+'
+    \) | xargs "$MISSPELL" --error
 
 echo 'PASS: No spelling issues detected'

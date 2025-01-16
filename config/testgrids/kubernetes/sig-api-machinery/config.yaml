@@ -2,6 +2,7 @@ dashboard_groups:
 - name: sig-api-machinery
   dashboard_names:
     - sig-api-machinery-gce-gke
+    - sig-api-machinery-gengo
     - sig-api-machinery-kube-storage-version-migrator
     - sig-api-machinery-structured-merge-diff
     - sig-api-machinery-kubebuilder
@@ -18,10 +19,6 @@ dashboards:
       test_group_name: ci-kubernetes-e2e-gci-gce-flaky
       base_options: include-filter-by-regex=sig-api-machinery
       description: apimachinery gce flaky e2e tests for master branch
-    - name: gce-single-flake-attempt
-      test_group_name: ci-kubernetes-e2e-gci-gce-single-flake-attempt
-      base_options: include-filter-by-regex=sig-api-machinery
-      description: apimachinery gce e2e tests for master branch with reduced flake attempt
     - name: gce-containerd
       test_group_name: ci-kubernetes-e2e-gci-gce-containerd
       base_options: include-filter-by-regex=sig-node
@@ -37,4 +34,5 @@ dashboards:
 - name: sig-api-machinery-kube-storage-version-migrator
 - name: sig-api-machinery-structured-merge-diff
 - name: sig-api-machinery-kubebuilder
+- name: sig-api-machinery-gengo
 - name: sig-api-machinery-network-proxy

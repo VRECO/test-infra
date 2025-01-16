@@ -1,22 +1,20 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
-- amwat
 - BenTheElder
 - cpanato
 - jeremyrickard
 - justaugustus
-- MushuEE
 - puerco
 - saschagrunert
-- spiffxp
+- Verolop
 - xmudrii
 approvers:
-- amwat
 - BenTheElder
+- cpanato
 - justaugustus
+- xmudrii
+emeritus_approvers:
+- amwat
 - spiffxp
-
-labels:
-- sig/release
-- area/release-eng
+- MushuEE

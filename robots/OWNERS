@@ -2,12 +2,15 @@
 
 reviewers:
 - cjwagner
-- fejta
 - stevekuznetsov
+- smg247
+- danilo-gemoli
+- droslean
 approvers:
 - cjwagner
-- fejta
 - stevekuznetsov
+emeritus_approvers:
+- fejta
 
 labels:
 - area/robots

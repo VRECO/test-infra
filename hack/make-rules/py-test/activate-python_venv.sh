@@ -22,13 +22,10 @@ cd "${REPO_ROOT}"
 
 # Ensure virtual env
 # Trick from https://pythonspeed.com/articles/activate-virtualenv-dockerfile/
-echo "Ensure virtual env"
 export VIRTUAL_ENV="${REPO_ROOT}/.python_virtual_env"
 
 if [[ ! -f "${VIRTUAL_ENV}/bin/activate" ]]; then
-    echo "Creating virtual env"
     python3 -m venv "${VIRTUAL_ENV}"
 fi
 
-echo "Activate virtual env"
 source "${VIRTUAL_ENV}/bin/activate"

@@ -1,35 +1,27 @@
 aliases:
   # business hours oncall for prow etc (https://go.k8s.io/oncall)
   test-infra-oncall:
-  - chaodaiG
+  - airbornepony
   - chases2
   - cjwagner
-  - e-blackwelder
-  - fejta
-  - listx
   - michelle192837
   - mpherman2
+  - timwangmusic
 
-  # https://github.com/kubernetes/sig-release/blob/master/release-managers.md#build-admins
-  build-admins:
-    - amwat
-    - BenTheElder
-    - MushuEE
-    - spiffxp
 
   sig-k8s-infra-oncall:
   - BenTheElder
   # kubernetes.io org admins
   - ameukam
   - dims
-  - spiffxp
   - thockin
+  - upodroid
 
   # copied from git.k8s.io/community/OWNERS_ALIASES
   sig-api-machinery-leads:
     - deads2k
     - fedebongio
-    - lavalamp
+    - jpbetz
   sig-apps-leads:
     - janetkuo
     - kow3ns
@@ -54,17 +46,23 @@ aliases:
     - soltysh
   sig-cloud-provider-leads:
     - andrewsykim
+    - bridgetkromhout
     - cheftako
+    - elmiko
+    - nckturner
   sig-cluster-lifecycle-leads:
     - fabriziopandini
     - justinsb
     - neolit123
     - vincepri
   sig-contributor-experience-leads:
-    - alisondy
-    - cblecker
-    - mrbobbytables
-    - nikhita
+    - MadhavJivrajani
+    - Priyankasaggu11929
+    - kaslin
+    - palnabarun
+  sig-contributor-experience-technical-leads:
+    - MadhavJivrajani
+    - Priyankasaggu11929
   sig-docs-leads:
     - divya-mohan0209
     - jimangel
@@ -72,15 +70,15 @@ aliases:
     - onlydole
     - sftim
   sig-instrumentation-leads:
-    - brancz
     - dashpole
+    - dgrisonnet
     - ehashman
     - logicalhan
   sig-k8s-infra-leads:
     - ameukam
     - dims
-    - spiffxp
-    - thockin
+    - upodroid
+    - bentheelder
   sig-multicluster-leads:
     - jeremyot
     - pmorie
@@ -97,8 +95,9 @@ aliases:
     - justaugustus
     - puerco
     - saschagrunert
+    - Verolop
   sig-scalability-leads:
-    - mm4tt
+    - marseel
     - shyamjvs
     - wojtek-t
   sig-scheduling-leads:
@@ -119,21 +118,19 @@ aliases:
   sig-testing-leads:
     - BenTheElder
     - alvaroaleman
+    - aojea
     - cjwagner
-    - spiffxp
-    - stevekuznetsov
+    - michelle192837
+    - pohly
   sig-ui-leads:
     - floreks
     - maciaszczykm
     - shu-mutou
-  sig-usability-leads:
-    - hpandeycodeit
-    - morengab
-    - tashimi
   sig-windows-leads:
+    - aravindhp
     - claudiubelu
-    - jayunit100
     - jsturtevant
+    - knabben
     - marosset
   wg-api-expression-leads:
     - apelisse
@@ -168,11 +165,11 @@ aliases:
     - mylesagray
     - phenixblue
   committee-code-of-conduct:
-    - celestehorgan
-    - karenhchu
-    - palnabarun
-    - tpepper
-    - vllry
+    - AnaMMedina21
+    - endocrimes
+    - hlipsig
+    - jeremyrickard
+    - salaxander
   committee-security-response:
     - cjcullen
     - joelsmith
@@ -182,12 +179,12 @@ aliases:
     - tabbysable
     - tallclair
   committee-steering:
+    - bentheelder
     - cblecker
-    - dims
     - justaugustus
-    - liggitt
     - mrbobbytables
     - parispittman
+    - palnabarun
     - tpepper
 ## BEGIN CUSTOM CONTENT
   provider-aws:
@@ -223,17 +220,24 @@ aliases:
   #   k/test-infra jobs and overall CI Signal
   #
   release-engineering-approvers:
+    - cici37 # Release Manager
     - cpanato # SIG Technical Lead / RelEng subproject owner / Release Manager
-    - jeremyrickard # SIG Technical Lead / RelEng subproject owner
+    - jeremyrickard # SIG Chair / RelEng subproject owner / Release Manager
     - justaugustus # SIG Chair / RelEng subproject owner / Release Manager
+    - palnabarun # Release Manager
     - puerco # SIG Technical Lead / RelEng subproject owner / Release Manager
     - saschagrunert # SIG Chair / RelEng subproject owner / Release Manager
+    - Verolop # SIG Technical Lead / RelEng subproject owner / Release Manager
+    - xmudrii # Release Manager
   release-engineering-reviewers:
+    - cici37 # Release Manager
     - cpanato # SIG Technical Lead / RelEng subproject owner / Release Manager
-    - jeremyrickard # SIG Technical Lead / RelEng subproject owner
+    - jeremyrickard # SIG Chair / RelEng subproject owner / Release Manager
     - justaugustus # SIG Chair / RelEng subproject owner / Release Manager
+    - palnabarun # Release Manager
     - puerco # SIG Technical Lead / RelEng subproject owner / Release Manager
     - saschagrunert # SIG Chair / RelEng subproject owner / Release Manager
+    - Verolop # SIG Technical Lead / RelEng subproject owner / Release Manager
     - xmudrii # Release Manager
 
   # copied from git.k8s.io/enhancements/OWNERS_ALIASES
@@ -248,42 +252,12 @@ aliases:
     - justaugustus # subproject owner
     - mrbobbytables # subproject owner
 
-  # copied from sigs.k8s.io/cluster-api-provider-vsphere/OWNERS_ALIASES
-  cluster-api-admins:
-    - detiber
-    - justinsb
-    - davidewatson
-    - vincepri
-  cluster-api-vsphere-maintainers:
-    - frapposelli
-    - yastij
-    - randomvariable
-  # end sigs.k8s.io/cluster-api-provider-vsphere/OWNERS_ALIASES
-
-  # mostly copied from sigs.k8s.io/controller-runtime/OWNERS_ALIASES
-  controller-runtime-admins:
-  - vincepri
-  - mengqiy
-
-  controller-runtime-maintainers:
-  - vincepri
-
-  controller-runtime-approvers:
-  - gerred
-  - alvaroaleman
-
-  controller-runtime-reviewers:
-  - alenkacz
-  - vincepri
-  - alexeldeib
-
-  controller-runtime-emeritus-maintainers:
-  - pwittrock
-
   # mostly copied from sigs.k8s.io/kubebuilder/OWNERS_ALIASES
   kubebuilder-admins:
+  - camilamacedo86
   - mengqiy
   - estroz
+  - joelanford
 
   kubebuilder-reviewers:
   - alexeldeib
@@ -298,14 +272,12 @@ aliases:
     - cpanato
     - jeremyrickard
     - justaugustus
-    - listx
     - puerco
     - saschagrunert
   promo-tools-reviewers:
     - cpanato
     - jeremyrickard
     - justaugustus
-    - listx
     - puerco
     - saschagrunert
 
@@ -322,6 +294,7 @@ aliases:
     - dims
     - justaugustus
     - nikhita
+    - palnabarun
     - puerco
     - saschagrunert
     - sttts
