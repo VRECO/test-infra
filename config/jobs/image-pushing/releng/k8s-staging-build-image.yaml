@@ -14,7 +14,7 @@ postsubmits:
       spec:
         serviceAccountName: gcb-builder
         containers:
-          - image: gcr.io/k8s-staging-test-infra/image-builder:v20211014-7ca1952a94
+          - image: gcr.io/k8s-staging-test-infra/image-builder:v20241224-fe22c549c1
             command:
               - /run.sh
             args:
@@ -32,13 +32,13 @@ postsubmits:
         github_team_slugs:
           - org: kubernetes
             slug: release-managers
-    - name: post-release-push-image-debian-iptables
+    - name: post-release-push-image-distroless-iptables
       cluster: k8s-infra-prow-build-trusted
       annotations:
         testgrid-dashboards: sig-release-releng-informing, sig-release-master-informing, sig-release-image-pushes, sig-k8s-infra-gcb
         testgrid-alert-email: release-managers+alerts@kubernetes.io
       decorate: true
-      run_if_changed: '^images\/build\/debian-iptables\/'
+      run_if_changed: '^images\/build\/distroless-iptables\/'
       branches:
         - ^main$
         # TODO(releng): Remove once repo default branch has been renamed
@@ -46,7 +46,7 @@ postsubmits:
       spec:
         serviceAccountName: gcb-builder
         containers:
-          - image: gcr.io/k8s-staging-test-infra/image-builder:v20211014-7ca1952a94
+          - image: gcr.io/k8s-staging-test-infra/image-builder:v20241224-fe22c549c1
             command:
               - /run.sh
             args:
@@ -54,7 +54,7 @@ postsubmits:
               - --scratch-bucket=gs://k8s-staging-build-image-gcb
               - --env-passthrough=REGISTRY
               - --build-dir=.
-              - images/build/debian-iptables
+              - images/build/distroless-iptables
             env:
               - name: LOG_TO_STDOUT
                 value: "y"
@@ -70,6 +70,9 @@ postsubmits:
         testgrid-dashboards: sig-release-releng-informing, sig-release-master-informing, sig-release-image-pushes, sig-k8s-infra-gcb
         testgrid-alert-email: release-managers+alerts@kubernetes.io
       decorate: true
+      decoration_config:
+        timeout: 240m
+        grace_period: 10m
       run_if_changed: '^images\/build\/go-runner\/'
       branches:
         - ^main$
@@ -78,7 +81,7 @@ postsubmits:
       spec:
         serviceAccountName: gcb-builder
         containers:
-          - image: gcr.io/k8s-staging-test-infra/image-builder:v20211014-7ca1952a94
+          - image: gcr.io/k8s-staging-test-infra/image-builder:v20241224-fe22c549c1
             command:
               - /run.sh
             args:
@@ -102,6 +105,8 @@ postsubmits:
         testgrid-dashboards: sig-release-releng-informing, sig-release-master-informing, sig-release-image-pushes, sig-k8s-infra-gcb
         testgrid-alert-email: release-managers+alerts@kubernetes.io
       decorate: true
+      decoration_config:
+        timeout: 4h
       run_if_changed: '^images\/build\/cross\/'
       branches:
         - ^main$
@@ -110,7 +115,7 @@ postsubmits:
       spec:
         serviceAccountName: gcb-builder
         containers:
-          - image: gcr.io/k8s-staging-test-infra/image-builder:v20211014-7ca1952a94
+          - image: gcr.io/k8s-staging-test-infra/image-builder:v20241224-fe22c549c1
             command:
               - /run.sh
             args:
@@ -118,6 +123,7 @@ postsubmits:
               - --scratch-bucket=gs://k8s-staging-build-image-gcb
               - --env-passthrough=REGISTRY
               - --build-dir=.
+              - --with-git-dir
               - images/build/cross
             env:
               - name: LOG_TO_STDOUT
@@ -142,7 +148,7 @@ postsubmits:
       spec:
         serviceAccountName: gcb-builder
         containers:
-          - image: gcr.io/k8s-staging-test-infra/image-builder:v20211014-7ca1952a94
+          - image: gcr.io/k8s-staging-test-infra/image-builder:v20241224-fe22c549c1
             command:
               - /run.sh
             args:

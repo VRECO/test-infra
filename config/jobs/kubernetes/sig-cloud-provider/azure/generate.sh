@@ -37,24 +37,65 @@ generate_presubmit_annotations() {
 EOF
 }
 
+generate_preset_labels() {
+  indent=${1}
+  capz_ref="${2}"
+  if [[ "${capz_ref}" == "main" ]]; then
+    creds=$(cat <<EOF
+  preset-azure-cred-wi: "true"
+EOF
+  )
+  else
+    creds=$(cat <<EOF
+  preset-azure-cred-only: "true"
+  preset-azure-capz-sa-cred: "true"
+EOF
+  )
+  fi
+  cat << EOF | pr -to $indent
+labels:
+  preset-dind-enabled: "true"
+  preset-kind-volume-mounts: "true"
+  preset-azure-anonymous-pull: "true"
+${creds}
+EOF
+}
+
+generate_serviceaccount_name() {
+  indent=${1}
+  capz_ref="${2}"
+  if [[ "${capz_ref}" == "main" ]]; then
+    serviceaccount="prowjob-default-sa"
+  else
+    serviceaccount="default"
+  fi
+  cat << EOF | pr -to $indent
+serviceAccountName: ${serviceaccount}
+EOF
+}
+
 # we need to define the full image URL so it can be autobumped
-tmp="gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master"
+tmp="gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master"
 kubekins_e2e_image="${tmp/\-master/}"
-installCSIdrivers=""
+installCSIdrivers=" ./deploy/install-driver.sh master local,snapshot,enable-avset &&"
+installCSIAzureFileDrivers=" ./deploy/install-driver.sh master local &&"
 
 for release in "$@"; do
   output="${dir}/release-${release}.yaml"
   kubernetes_version="latest"
+  capz_release="release-1.15"
 
   if [[ "${release}" == "master" ]]; then
-    branch="master"
+    branch=$(echo -e 'master # TODO(releng): Remove once repo default branch has been renamed\n      - main')
+    branch_name="master"
+    ccm_branch="master"
+    capz_periodic_branch_name="main"
   else
     branch="release-${release}"
+    branch_name="release-${release}"
     kubernetes_version+="-${release}"
-  fi
-
-  if [[ "${release}" == "master" || "${release}" == "1.23" ]]; then
-    installCSIdrivers=" ./deploy/install-driver.sh master local,snapshot,enable-avset &&"
+    ccm_branch="release-${release}"
+    capz_periodic_branch_name=${capz_release}
   fi
 
   cat >"${output}" <<EOF
@@ -69,22 +110,23 @@ presubmits:
     path_alias: k8s.io/kubernetes
     branches:
       - ${branch}
-    labels:
-      preset-dind-enabled: "true"
-      preset-kind-volume-mounts: "true"
-      preset-azure-cred-only: "true"
-      preset-azure-anonymous-pull: "true"
+$(generate_preset_labels 4 ${capz_release})
     extra_refs:
       - org: kubernetes-sigs
         repo: cluster-api-provider-azure
-        base_ref: v1.0.1
+        base_ref: ${capz_release}
         path_alias: sigs.k8s.io/cluster-api-provider-azure
         workdir: true
       - org: kubernetes-sigs
         repo: azuredisk-csi-driver
         base_ref: master
         path_alias: sigs.k8s.io/azuredisk-csi-driver
+      - org: kubernetes-sigs
+        repo: cloud-provider-azure
+        base_ref: ${ccm_branch}
+        path_alias: sigs.k8s.io/cloud-provider-azure
     spec:
+$(generate_serviceaccount_name 6 ${capz_release})
       containers:
         - image: ${kubekins_e2e_image}-master
           command:
@@ -97,15 +139,15 @@ presubmits:
               cd \${GOPATH}/src/sigs.k8s.io/azuredisk-csi-driver &&${installCSIdrivers}
               make e2e-test
           env:
-            - name: AZURE_STORAGE_DRIVER
-              value: kubernetes.io/azure-disk # In-tree Azure disk storage class
+            - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+              value: "kubernetes.io/azure-disk" # In-tree Azure disk storage class
           securityContext:
             privileged: true
           resources:
             requests:
               cpu: 1
               memory: "4Gi"
-$(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-disk)
+$(generate_presubmit_annotations ${branch_name} pull-kubernetes-e2e-capz-azure-disk)
   - name: pull-kubernetes-e2e-capz-azure-disk-vmss
     decorate: true
     always_run: false
@@ -114,22 +156,23 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-disk)
     path_alias: k8s.io/kubernetes
     branches:
       - ${branch}
-    labels:
-      preset-dind-enabled: "true"
-      preset-kind-volume-mounts: "true"
-      preset-azure-cred-only: "true"
-      preset-azure-anonymous-pull: "true"
+$(generate_preset_labels 4 ${capz_release})
     extra_refs:
       - org: kubernetes-sigs
         repo: cluster-api-provider-azure
-        base_ref: v1.0.1
+        base_ref: ${capz_release}
         path_alias: sigs.k8s.io/cluster-api-provider-azure
         workdir: true
       - org: kubernetes-sigs
         repo: azuredisk-csi-driver
         base_ref: master
         path_alias: sigs.k8s.io/azuredisk-csi-driver
+      - org: kubernetes-sigs
+        repo: cloud-provider-azure
+        base_ref: ${ccm_branch}
+        path_alias: sigs.k8s.io/cloud-provider-azure
     spec:
+$(generate_serviceaccount_name 6 ${capz_release})
       containers:
         - image: ${kubekins_e2e_image}-master
           command:
@@ -142,9 +185,9 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-disk)
               cd \${GOPATH}/src/sigs.k8s.io/azuredisk-csi-driver &&${installCSIdrivers}
               make e2e-test
           env:
-            - name: AZURE_STORAGE_DRIVER
-              value: kubernetes.io/azure-disk # In-tree Azure disk storage class
-            - name: EXP_MACHINE_POOL
+            - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+              value: "kubernetes.io/azure-disk" # In-tree Azure disk storage class
+            - name: EXP_MACHINE_POOL # CAPZ config
               value: "true"
           securityContext:
             privileged: true
@@ -152,7 +195,7 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-disk)
             requests:
               cpu: 1
               memory: "4Gi"
-$(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-disk-vmss)
+$(generate_presubmit_annotations ${branch_name} pull-kubernetes-e2e-capz-azure-disk-vmss)
   - name: pull-kubernetes-e2e-capz-azure-file
     decorate: true
     always_run: false
@@ -161,22 +204,23 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-disk-v
     path_alias: k8s.io/kubernetes
     branches:
       - ${branch}
-    labels:
-      preset-dind-enabled: "true"
-      preset-kind-volume-mounts: "true"
-      preset-azure-cred-only: "true"
-      preset-azure-anonymous-pull: "true"
+$(generate_preset_labels 4 ${capz_release})
     extra_refs:
       - org: kubernetes-sigs
         repo: cluster-api-provider-azure
-        base_ref: v1.0.1
+        base_ref: ${capz_release}
         path_alias: sigs.k8s.io/cluster-api-provider-azure
         workdir: true
       - org: kubernetes-sigs
         repo: azurefile-csi-driver
         base_ref: master
         path_alias: sigs.k8s.io/azurefile-csi-driver
+      - org: kubernetes-sigs
+        repo: cloud-provider-azure
+        base_ref: ${ccm_branch}
+        path_alias: sigs.k8s.io/cloud-provider-azure
     spec:
+$(generate_serviceaccount_name 6 ${capz_release})
       containers:
         - image: ${kubekins_e2e_image}-master
           command:
@@ -190,15 +234,15 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-disk-v
               cd \${GOPATH}/src/sigs.k8s.io/azurefile-csi-driver &&${installCSIdrivers}
               make e2e-test
           env:
-            - name: AZURE_STORAGE_DRIVER
-              value: kubernetes.io/azure-file # In-tree Azure file storage class
+            - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+              value: "kubernetes.io/azure-file" # In-tree Azure file storage class
           securityContext:
             privileged: true
           resources:
             requests:
               cpu: 1
               memory: "4Gi"
-$(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-file)
+$(generate_presubmit_annotations ${branch_name} pull-kubernetes-e2e-capz-azure-file)
   - name: pull-kubernetes-e2e-capz-azure-file-vmss
     decorate: true
     always_run: false
@@ -207,22 +251,23 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-file)
     path_alias: k8s.io/kubernetes
     branches:
       - ${branch}
-    labels:
-      preset-dind-enabled: "true"
-      preset-kind-volume-mounts: "true"
-      preset-azure-cred-only: "true"
-      preset-azure-anonymous-pull: "true"
+$(generate_preset_labels 4 ${capz_release})
     extra_refs:
       - org: kubernetes-sigs
         repo: cluster-api-provider-azure
-        base_ref: v1.0.1
+        base_ref: ${capz_release}
         path_alias: sigs.k8s.io/cluster-api-provider-azure
         workdir: true
       - org: kubernetes-sigs
         repo: azurefile-csi-driver
         base_ref: master
         path_alias: sigs.k8s.io/azurefile-csi-driver
+      - org: kubernetes-sigs
+        repo: cloud-provider-azure
+        base_ref: ${ccm_branch}
+        path_alias: sigs.k8s.io/cloud-provider-azure
     spec:
+$(generate_serviceaccount_name 6 ${capz_release})
       containers:
         - image: ${kubekins_e2e_image}-master
           command:
@@ -236,9 +281,9 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-file)
               cd \${GOPATH}/src/sigs.k8s.io/azurefile-csi-driver &&${installCSIdrivers}
               make e2e-test
           env:
-            - name: AZURE_STORAGE_DRIVER
-              value: kubernetes.io/azure-file # In-tree Azure file storage class
-            - name: EXP_MACHINE_POOL
+            - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+              value: "kubernetes.io/azure-file" # In-tree Azure file storage class
+            - name: EXP_MACHINE_POOL # CAPZ config
               value: "true"
           securityContext:
             privileged: true
@@ -246,7 +291,7 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-file)
             requests:
               cpu: 1
               memory: "4Gi"
-$(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-file-vmss)
+$(generate_presubmit_annotations ${branch_name} pull-kubernetes-e2e-capz-azure-file-vmss)
   - name: pull-kubernetes-e2e-capz-conformance
     decorate: true
     always_run: false
@@ -255,18 +300,19 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-file-v
     path_alias: k8s.io/kubernetes
     branches:
       - ${branch}
-    labels:
-      preset-dind-enabled: "true"
-      preset-kind-volume-mounts: "true"
-      preset-azure-cred-only: "true"
-      preset-azure-anonymous-pull: "true"
+$(generate_preset_labels 4 ${capz_release})
     extra_refs:
     - org: kubernetes-sigs
       repo: cluster-api-provider-azure
-      base_ref: v1.0.1
+      base_ref: ${capz_release}
       path_alias: sigs.k8s.io/cluster-api-provider-azure
       workdir: true
+    - org: kubernetes-sigs
+      repo: cloud-provider-azure
+      base_ref: ${ccm_branch}
+      path_alias: sigs.k8s.io/cloud-provider-azure
     spec:
+$(generate_serviceaccount_name 6 ${capz_release})
       containers:
       - image: ${kubekins_e2e_image}-master
         command:
@@ -283,63 +329,27 @@ $(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-azure-file-v
           value: /home/prow/go/src/sigs.k8s.io/cluster-api-provider-azure/test/e2e/data/kubetest/conformance-fast.yaml
         - name: CONFORMANCE_NODES
           value: "25"
-$(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-conformance)
-  - name: pull-kubernetes-e2e-capz-ha-control-plane
-    decorate: true
-    decoration_config:
-      timeout: 4h
-    always_run: false
-    optional: true
-    path_alias: k8s.io/kubernetes
-    branches:
-      - ${branch}
-    labels:
-      preset-dind-enabled: "true"
-      preset-kind-volume-mounts: "true"
-      preset-azure-cred-only: "true"
-      preset-azure-anonymous-pull: "true"
-    extra_refs:
-    - org: jackfrancis #TODO change back to kubernetes-sigs
-      repo: cluster-api-provider-azure
-      base_ref: capz-ha-control-plane-tests #TODO change back to main
-      path_alias: sigs.k8s.io/cluster-api-provider-azure
-      workdir: true
-    spec:
-      containers:
-      - image: ${kubekins_e2e_image}-master
-        command:
-        - runner.sh
-        - ./scripts/ci-conformance.sh
-        securityContext:
-          privileged: true
-        resources:
-          requests:
-            cpu: 1
-            memory: "4Gi"
-        env:
-        - name: KUBETEST_CONF_PATH
-          value: /home/prow/go/src/sigs.k8s.io/cluster-api-provider-azure/test/e2e/data/kubetest/conformance.yaml
-        - name: CONFORMANCE_NODES
-          value: "1"
-        - name: CONFORMANCE_CONTROL_PLANE_MACHINE_COUNT
-          value: "3"
-$(generate_presubmit_annotations ${branch} pull-kubernetes-e2e-capz-ha-control-plane)
+$(generate_presubmit_annotations ${branch_name} pull-kubernetes-e2e-capz-conformance)
 periodics:
 - interval: 3h
   name: capz-conformance-${release/./-}
   decorate: true
   decoration_config:
     timeout: 3h
-  labels:
-    preset-dind-enabled: "true"
-    preset-kind-volume-mounts: "true"
-    preset-azure-cred-only: "true"
+$(generate_preset_labels 2 ${capz_periodic_branch_name})
   extra_refs:
   - org: kubernetes-sigs
     repo: cluster-api-provider-azure
-    base_ref: main
+    base_ref: ${capz_periodic_branch_name}
     path_alias: sigs.k8s.io/cluster-api-provider-azure
+    workdir: true
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
   spec:
+$(generate_serviceaccount_name 4 ${capz_periodic_branch_name})
     containers:
     - image: ${kubekins_e2e_image}-master
       command:
@@ -365,18 +375,105 @@ periodics:
     testgrid-num-columns-recent: '30'
 
 - interval: 24h
+  name: capz-conformance-ipv6-${release/./-}
+  decorate: true
+  decoration_config:
+    timeout: 3h
+$(generate_preset_labels 2 ${capz_periodic_branch_name})
+  extra_refs:
+  - org: kubernetes-sigs
+    repo: cluster-api-provider-azure
+    base_ref: ${capz_periodic_branch_name}
+    path_alias: sigs.k8s.io/cluster-api-provider-azure
+    workdir: true
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
+  spec:
+$(generate_serviceaccount_name 4 ${capz_periodic_branch_name})
+    containers:
+    - image: ${kubekins_e2e_image}-master
+      command:
+      - runner.sh
+      - ./scripts/ci-conformance.sh
+      env:
+      - name: E2E_ARGS
+        value: "-kubetest.use-ci-artifacts"
+      - name: KUBERNETES_VERSION
+        value: "${kubernetes_version}"
+      - name: CONFORMANCE_WORKER_MACHINE_COUNT
+        value: "2"
+      - name: IP_FAMILY
+        value: "IPv6"
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: "4Gi"
+  annotations:
+    testgrid-dashboards: provider-azure-${release}-signal
+    testgrid-tab-name: capz-conformance-ipv6
+    testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
+    testgrid-num-columns-recent: '30'
+
+- interval: 24h
+  name: capz-conformance-dual-stack-${release/./-}
+  decorate: true
+  decoration_config:
+    timeout: 3h
+$(generate_preset_labels 2 ${capz_periodic_branch_name})
+  extra_refs:
+  - org: kubernetes-sigs
+    repo: cluster-api-provider-azure
+    base_ref: ${capz_periodic_branch_name}
+    path_alias: sigs.k8s.io/cluster-api-provider-azure
+    workdir: true
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
+  spec:
+$(generate_serviceaccount_name 4 ${capz_periodic_branch_name})
+    containers:
+    - image: ${kubekins_e2e_image}-master
+      command:
+      - runner.sh
+      - ./scripts/ci-conformance.sh
+      env:
+      - name: E2E_ARGS
+        value: "-kubetest.use-ci-artifacts"
+      - name: KUBERNETES_VERSION
+        value: "${kubernetes_version}"
+      - name: CONFORMANCE_WORKER_MACHINE_COUNT
+        value: "2"
+      - name: IP_FAMILY
+        value: "dual"
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: "4Gi"
+  annotations:
+    testgrid-dashboards: provider-azure-${release}-signal
+    testgrid-tab-name: capz-conformance-dual-stack
+    testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
+    testgrid-num-columns-recent: '30'
+
+- interval: 24h
   name: capz-azure-file-${release/./-}
   decorate: true
   decoration_config:
     timeout: 3h
-  labels:
-    preset-dind-enabled: "true"
-    preset-kind-volume-mounts: "true"
-    preset-azure-cred: "true"
+$(generate_preset_labels 2 ${capz_periodic_branch_name})
   extra_refs:
   - org: kubernetes-sigs
     repo: cluster-api-provider-azure
-    base_ref: main
+    base_ref: ${capz_periodic_branch_name}
     path_alias: sigs.k8s.io/cluster-api-provider-azure
   - org: kubernetes-sigs
     repo: azurefile-csi-driver
@@ -384,9 +481,15 @@ periodics:
     path_alias: sigs.k8s.io/azurefile-csi-driver
   - org: kubernetes
     repo: kubernetes
-    base_ref: ${branch}
+    base_ref: ${branch_name}
     path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
   spec:
+$(generate_serviceaccount_name 4 ${capz_periodic_branch_name})
     containers:
     - image: ${kubekins_e2e_image}-master
       command:
@@ -400,10 +503,10 @@ periodics:
         cd \${GOPATH}/src/sigs.k8s.io/azurefile-csi-driver &&${installCSIdrivers}
         make e2e-test
       env:
-      - name: USE_CI_ARTIFACTS
-        value: "true"
-      - name: AZURE_STORAGE_DRIVER
-        value: kubernetes.io/azure-file # In-tree Azure file storage class
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-file" # In-tree Azure file storage class
       securityContext:
         privileged: true
       resources:
@@ -421,14 +524,11 @@ periodics:
   decorate: true
   decoration_config:
     timeout: 3h
-  labels:
-    preset-dind-enabled: "true"
-    preset-kind-volume-mounts: "true"
-    preset-azure-cred: "true"
+$(generate_preset_labels 2 ${capz_periodic_branch_name})
   extra_refs:
   - org: kubernetes-sigs
     repo: cluster-api-provider-azure
-    base_ref: main
+    base_ref: ${capz_periodic_branch_name}
     path_alias: sigs.k8s.io/cluster-api-provider-azure
   - org: kubernetes-sigs
     repo: azurefile-csi-driver
@@ -436,9 +536,15 @@ periodics:
     path_alias: sigs.k8s.io/azurefile-csi-driver
   - org: kubernetes
     repo: kubernetes
-    base_ref: ${branch}
+    base_ref: ${branch_name}
     path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
   spec:
+$(generate_serviceaccount_name 4 ${capz_periodic_branch_name})
     containers:
     - image: ${kubekins_e2e_image}-master
       command:
@@ -449,15 +555,15 @@ periodics:
       - -c
       - >-
         kubectl apply -f templates/addons/azurefile-role.yaml &&
-        cd \${GOPATH}/src/sigs.k8s.io/azurefile-csi-driver &&${installCSIdrivers}
+        cd \${GOPATH}/src/sigs.k8s.io/azurefile-csi-driver &&${installCSIAzureFileDrivers}
         make e2e-test
       env:
-      - name: USE_CI_ARTIFACTS
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: EXP_MACHINE_POOL # CAPZ config
         value: "true"
-      - name: EXP_MACHINE_POOL
-        value: "true"
-      - name: AZURE_STORAGE_DRIVER
-        value: kubernetes.io/azure-file # In-tree Azure file storage class
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-file" # In-tree Azure file storage class
       securityContext:
         privileged: true
       resources:
@@ -475,14 +581,11 @@ periodics:
   decorate: true
   decoration_config:
     timeout: 3h
-  labels:
-    preset-dind-enabled: "true"
-    preset-kind-volume-mounts: "true"
-    preset-azure-cred: "true"
+$(generate_preset_labels 2 ${capz_periodic_branch_name})
   extra_refs:
   - org: kubernetes-sigs
     repo: cluster-api-provider-azure
-    base_ref: main
+    base_ref: ${capz_periodic_branch_name}
     path_alias: sigs.k8s.io/cluster-api-provider-azure
   - org: kubernetes-sigs
     repo: azuredisk-csi-driver
@@ -490,9 +593,15 @@ periodics:
     path_alias: sigs.k8s.io/azuredisk-csi-driver
   - org: kubernetes
     repo: kubernetes
-    base_ref: ${branch}
+    base_ref: ${branch_name}
     path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
   spec:
+$(generate_serviceaccount_name 4 ${capz_periodic_branch_name})
     containers:
     - image: ${kubekins_e2e_image}-master
       command:
@@ -505,10 +614,10 @@ periodics:
         cd \${GOPATH}/src/sigs.k8s.io/azuredisk-csi-driver &&${installCSIdrivers}
         make e2e-test
       env:
-      - name: USE_CI_ARTIFACTS
-        value: "true"
-      - name: AZURE_STORAGE_DRIVER
-        value: kubernetes.io/azure-disk # In-tree Azure disk storage class
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-disk" # In-tree Azure disk storage class
       securityContext:
         privileged: true
       resources:
@@ -526,14 +635,11 @@ periodics:
   decorate: true
   decoration_config:
     timeout: 3h
-  labels:
-    preset-dind-enabled: "true"
-    preset-kind-volume-mounts: "true"
-    preset-azure-cred: "true"
+$(generate_preset_labels 2 ${capz_periodic_branch_name})
   extra_refs:
   - org: kubernetes-sigs
     repo: cluster-api-provider-azure
-    base_ref: main
+    base_ref: ${capz_periodic_branch_name}
     path_alias: sigs.k8s.io/cluster-api-provider-azure
   - org: kubernetes-sigs
     repo: azuredisk-csi-driver
@@ -541,9 +647,15 @@ periodics:
     path_alias: sigs.k8s.io/azuredisk-csi-driver
   - org: kubernetes
     repo: kubernetes
-    base_ref: ${branch}
+    base_ref: ${branch_name}
     path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
   spec:
+$(generate_serviceaccount_name 4 ${capz_periodic_branch_name})
     containers:
     - image: ${kubekins_e2e_image}-master
       command:
@@ -556,12 +668,12 @@ periodics:
         cd \${GOPATH}/src/sigs.k8s.io/azuredisk-csi-driver &&${installCSIdrivers}
         make e2e-test
       env:
-      - name: USE_CI_ARTIFACTS
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: EXP_MACHINE_POOL # CAPZ config
         value: "true"
-      - name: EXP_MACHINE_POOL
-        value: "true"
-      - name: AZURE_STORAGE_DRIVER
-        value: kubernetes.io/azure-disk # In-tree Azure disk storage class
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-disk" # In-tree Azure disk storage class
       securityContext:
         privileged: true
       resources:
@@ -574,4 +686,273 @@ periodics:
     testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
     testgrid-num-columns-recent: '30'
 EOF
+  if [[ "${release}" == "master" ]]; then
+    cat >>"${output}" <<EOF
+# the "capz-release-*" jobs below validate the health of cloud-provider-azure:master against a stable release of capz
+- interval: 24h
+  name: capz-release-conformance-master
+  decorate: true
+  decoration_config:
+    timeout: 3h
+$(generate_preset_labels 2 ${capz_release})
+  extra_refs:
+  - org: kubernetes-sigs
+    repo: cluster-api-provider-azure
+    base_ref: ${capz_release}
+    path_alias: sigs.k8s.io/cluster-api-provider-azure
+    workdir: true
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
+  spec:
+$(generate_serviceaccount_name 4 ${capz_release})
+    containers:
+    - image: ${kubekins_e2e_image}-master
+      command:
+      - runner.sh
+      - ./scripts/ci-conformance.sh
+      env:
+      - name: E2E_ARGS
+        value: "-kubetest.use-ci-artifacts"
+      - name: KUBERNETES_VERSION
+        value: "${kubernetes_version}"
+      - name: CONFORMANCE_WORKER_MACHINE_COUNT
+        value: "2"
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: "4Gi"
+  annotations:
+    testgrid-dashboards: provider-azure-master-signal
+    testgrid-tab-name: capz-release-conformance
+    testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
+    testgrid-num-columns-recent: '30'
+
+- interval: 24h
+  name: capz-release-azure-file-master
+  decorate: true
+  decoration_config:
+    timeout: 3h
+$(generate_preset_labels 2 ${capz_release})
+  extra_refs:
+  - org: kubernetes-sigs
+    repo: cluster-api-provider-azure
+    base_ref: ${capz_release}
+    path_alias: sigs.k8s.io/cluster-api-provider-azure
+  - org: kubernetes-sigs
+    repo: azurefile-csi-driver
+    base_ref: master
+    path_alias: sigs.k8s.io/azurefile-csi-driver
+  - org: kubernetes
+    repo: kubernetes
+    base_ref: master
+    path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
+  spec:
+$(generate_serviceaccount_name 4 ${capz_release})
+    containers:
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
+      command:
+      - runner.sh
+      - ./scripts/ci-entrypoint.sh
+      args:
+      - bash
+      - -c
+      - >-
+        kubectl apply -f templates/addons/azurefile-role.yaml &&
+        cd \${GOPATH}/src/sigs.k8s.io/azurefile-csi-driver &&${installCSIAzureFileDrivers}
+        make e2e-test
+      env:
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-file" # In-tree Azure file storage class
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: "4Gi"
+  annotations:
+    testgrid-dashboards: provider-azure-master-signal
+    testgrid-tab-name: capz-release-azure-file
+    testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
+    testgrid-num-columns-recent: '30'
+
+- interval: 24h
+  name: capz-release-azure-file-vmss-master
+  decorate: true
+  decoration_config:
+    timeout: 3h
+$(generate_preset_labels 2 ${capz_release})
+  extra_refs:
+  - org: kubernetes-sigs
+    repo: cluster-api-provider-azure
+    base_ref: ${capz_release}
+    path_alias: sigs.k8s.io/cluster-api-provider-azure
+  - org: kubernetes-sigs
+    repo: azurefile-csi-driver
+    base_ref: master
+    path_alias: sigs.k8s.io/azurefile-csi-driver
+  - org: kubernetes
+    repo: kubernetes
+    base_ref: master
+    path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
+  spec:
+$(generate_serviceaccount_name 4 ${capz_release})
+    containers:
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
+      command:
+      - runner.sh
+      - ./scripts/ci-entrypoint.sh
+      args:
+      - bash
+      - -c
+      - >-
+        kubectl apply -f templates/addons/azurefile-role.yaml &&
+        cd \${GOPATH}/src/sigs.k8s.io/azurefile-csi-driver &&${installCSIAzureFileDrivers}
+        make e2e-test
+      env:
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: EXP_MACHINE_POOL # CAPZ config
+        value: "true"
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-file" # In-tree Azure file storage class
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: "4Gi"
+  annotations:
+    testgrid-dashboards: provider-azure-master-signal
+    testgrid-tab-name: capz-release-azure-file-vmss
+    testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
+    testgrid-num-columns-recent: '30'
+
+- interval: 24h
+  name: capz-release-azure-disk-master
+  decorate: true
+  decoration_config:
+    timeout: 3h
+$(generate_preset_labels 2 ${capz_release})
+  extra_refs:
+  - org: kubernetes-sigs
+    repo: cluster-api-provider-azure
+    base_ref: ${capz_release}
+    path_alias: sigs.k8s.io/cluster-api-provider-azure
+  - org: kubernetes-sigs
+    repo: azuredisk-csi-driver
+    base_ref: master
+    path_alias: sigs.k8s.io/azuredisk-csi-driver
+  - org: kubernetes
+    repo: kubernetes
+    base_ref: master
+    path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
+  spec:
+$(generate_serviceaccount_name 4 ${capz_release})
+    containers:
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
+      command:
+      - runner.sh
+      - ./scripts/ci-entrypoint.sh
+      args:
+      - bash
+      - -c
+      - >-
+        cd \${GOPATH}/src/sigs.k8s.io/azuredisk-csi-driver && ./deploy/install-driver.sh master local,snapshot,enable-avset &&
+        make e2e-test
+      env:
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-disk" # In-tree Azure disk storage class
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: "4Gi"
+  annotations:
+    testgrid-dashboards: provider-azure-master-signal
+    testgrid-tab-name: capz-release-azure-disk
+    testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
+    testgrid-num-columns-recent: '30'
+
+- interval: 24h
+  name: capz-release-azure-disk-vmss-master
+  decorate: true
+  decoration_config:
+    timeout: 3h
+$(generate_preset_labels 2 ${capz_release})
+  extra_refs:
+  - org: kubernetes-sigs
+    repo: cluster-api-provider-azure
+    base_ref: ${capz_release}
+    path_alias: sigs.k8s.io/cluster-api-provider-azure
+  - org: kubernetes-sigs
+    repo: azuredisk-csi-driver
+    base_ref: master
+    path_alias: sigs.k8s.io/azuredisk-csi-driver
+  - org: kubernetes
+    repo: kubernetes
+    base_ref: master
+    path_alias: k8s.io/kubernetes
+  - org: kubernetes-sigs
+    repo: cloud-provider-azure
+    base_ref: ${ccm_branch}
+    path_alias: sigs.k8s.io/cloud-provider-azure
+    workdir: false
+  spec:
+$(generate_serviceaccount_name 4 ${capz_release})
+    containers:
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
+      command:
+      - runner.sh
+      - ./scripts/ci-entrypoint.sh
+      args:
+      - bash
+      - -c
+      - >-
+        cd \${GOPATH}/src/sigs.k8s.io/azuredisk-csi-driver && ./deploy/install-driver.sh master local,snapshot,enable-avset &&
+        make e2e-test
+      env:
+      - name: KUBERNETES_VERSION # CAPZ config
+        value: "${kubernetes_version}"
+      - name: EXP_MACHINE_POOL # CAPZ config
+        value: "true"
+      - name: AZURE_STORAGE_DRIVER # azuredisk-csi-driver config
+        value: "kubernetes.io/azure-disk" # In-tree Azure disk storage class
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 1
+          memory: "4Gi"
+  annotations:
+    testgrid-dashboards: provider-azure-master-signal
+    testgrid-tab-name: capz-release-azure-disk-vmss
+    testgrid-alert-email: kubernetes-provider-azure@googlegroups.com
+    testgrid-num-columns-recent: '30'
+EOF
+  fi
 done

@@ -17,6 +17,8 @@ presets:
   # Turn on profiling for various components.
   - name: ETCD_TEST_ARGS
     value: "--enable-pprof"
+  - name: APISERVER_TEST_ARGS
+    value: "--profiling --contention-profiling"
   # Number of bytes of an additional nodes objects annotation in a kubemark
   # cluster. The annotation label is added to make nodes objects sizes similar
   # to regular cluster nodes.
@@ -24,9 +26,9 @@ presets:
     value: 15000
   # Increase throughput in Kubemark master components and turn on profiling.
   - name: KUBEMARK_CONTROLLER_MANAGER_TEST_ARGS
-    value: "--profiling --kube-api-qps=100 --kube-api-burst=100"
+    value: "--profiling --contention-profiling --kube-api-qps=100 --kube-api-burst=100"
   - name: KUBEMARK_SCHEDULER_TEST_ARGS
-    value: "--profiling --kube-api-qps=100 --kube-api-burst=100"
+    value: "--profiling --contention-profiling --kube-api-qps=100 --kube-api-burst=100"
   # Reduce logs verbosity
   - name: TEST_CLUSTER_LOG_LEVEL
     value: "--v=2"
@@ -52,7 +54,7 @@ presets:
     value: "5G"
   # Ensure good enough architecture for master machines.
   - name: MASTER_MIN_CPU_ARCHITECTURE
-    value: "Intel Skylake"
+    value: "Intel Ice Lake"
   # Increase delete collection parallelism.
   - name: TEST_CLUSTER_DELETE_COLLECTION_WORKERS
     value: --delete-collection-workers=16
@@ -146,20 +148,30 @@ presets:
     value: "true"
   # Ensure good enough architecture for master machines.
   - name: MASTER_MIN_CPU_ARCHITECTURE
-    value: "Intel Skylake"
+    value: "Intel Ice Lake"
+  - name: MASTER_SIZE
+    value: "n2-standard-32"
   # Turn on profiling for various components and
   # increase throughput in master components.
   - name: ETCD_EXTRA_ARGS
     value: "--enable-pprof"
+  - name: APISERVER_TEST_ARGS
+    value: "--profiling --contention-profiling"
   - name: CONTROLLER_MANAGER_TEST_ARGS
-    value: "--profiling --kube-api-qps=100 --kube-api-burst=100"
+    value: "--profiling --contention-profiling --kube-api-qps=100 --kube-api-burst=100"
   - name: KUBELET_TEST_ARGS
-    value: "--enable-debugging-handlers"
+    value: "--enable-debugging-handlers --kube-api-qps=100 --kube-api-burst=100"
+  - name: NODE_KUBELET_TEST_ARGS
+    # e2-medium machines report the capacity of 2cpu.
+    # We adjust the allocatable to match reality and additionally tweak it
+    # to achieve roughly 1:4 allocatable cpu to memory ration.
+    value: "--kube-reserved=cpu=1050m"
   - name: KUBEPROXY_TEST_ARGS
     # TODO(#74011): Remove metrics-bind-address if the default is set.
+    # FeatureGate added in #110268 v1.26
     value: "--profiling --metrics-bind-address=0.0.0.0"
   - name: SCHEDULER_TEST_ARGS
-    value: "--profiling --kube-api-qps=100 --kube-api-burst=100"
+    value: "--profiling --contention-profiling --kube-api-qps=100 --kube-api-burst=100"
   # Reduce logs verbosity.
   - name: TEST_CLUSTER_LOG_LEVEL
     value: --v=2
@@ -224,7 +236,7 @@ presets:
       core/v1/Secret
       core/v1/Service
       batch/v1/Job
-      batch/v1beta1/CronJob
+      batch/v1/CronJob
       apps/v1/DaemonSet
       apps/v1/Deployment
       apps/v1/ReplicaSet
@@ -248,17 +260,12 @@ presets:
     value: true
   - name: PROMETHEUS_STORAGE_CLASS_PROVISIONER
     value: pd.csi.storage.gke.io
-
-  ###### Scalability Envs
-  ### Common env variables for containerd scalability-related suites.
-  # Deprecated. Should be removed after 1.20 branch will be removed from testing
-- labels:
-    preset-e2e-scalability-containerd: "true"
-  env:
-  - name: CL2_PROBE_MEASUREMENTS_CHECK_PROBES_READY_TIMEOUT
-    value: "15m"
-  - name: KUBE_CONTAINER_RUNTIME
-    value: "containerd"
+  - name: KUBE_APISERVER_GODEBUG
+    value: gctrace=1
+  - name: CL2_ENABLE_QUOTAS_USAGE_MEASUREMENT
+    value: "true"
+  - name: KUBE_GCE_PRIVATE_CLUSTER_PORTS_PER_VM
+    value: 256
 
 ###### Scalability Envs
 ### Common env variables for node scalability-related suites.
@@ -289,7 +296,7 @@ presets:
   - name: ETCD_EXTRA_ARGS
     value: "--enable-pprof"
   - name: CONTROLLER_MANAGER_TEST_ARGS
-    value: "--profiling --kube-api-qps=100 --kube-api-burst=100"
+    value: "--profiling --contention-profiling --kube-api-qps=100 --kube-api-burst=100"
   # Bump max pods per node in Kubelet, because there are more than 10
   # system pods in 1-node cluster.
   - name: MAX_PODS_PER_NODE
@@ -299,7 +306,7 @@ presets:
   - name: KUBEPROXY_TEST_ARGS
     value: "--profiling"
   - name: SCHEDULER_TEST_ARGS
-    value: "--profiling --kube-api-qps=100 --kube-api-burst=100"
+    value: "--profiling --contention-profiling --kube-api-qps=100 --kube-api-burst=100"
   # Reduce logs verbosity.
   - name: TEST_CLUSTER_LOG_LEVEL
     value: --v=2
@@ -317,10 +324,14 @@ presets:
 - labels:
     preset-e2e-scalability-presubmits: "true"
   env:
+  - name: PROMETHEUS_SCRAPE_MASTER_KUBELETS
+    value: true
 
 - labels:
     preset-e2e-scalability-periodics: "true"
   env:
+  - name: PROMETHEUS_SCRAPE_MASTER_KUBELETS
+    value: true
 
 - labels:
     preset-e2e-scalability-periodics-master: "true"

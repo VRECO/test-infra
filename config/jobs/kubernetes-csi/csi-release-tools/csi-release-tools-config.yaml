@@ -3,6 +3,7 @@
 presubmits:
   kubernetes-csi/csi-release-tools:
   - name: pull-kubernetes-csi-csi-release-tools
+    cluster: eks-prow-build-cluster
     always_run: true
     decorate: true
     skip_report: false
@@ -18,21 +19,23 @@ presubmits:
     spec:
       containers:
       # We need this image because it has Docker in Docker and go.
-      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         command:
         - runner.sh
         args:
         - ./.prow.sh
-        env:
-        - name: CSI_SNAPSHOTTER_VERSION
-          value: "v3.0.3"
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
         resources:
           requests:
-            cpu: 2000m
+            memory: "9Gi"
+            cpu: 4
+          limits:
+            memory: "9Gi"
+            cpu: 4
   - name: pull-kubernetes-csi-release-tools-csi-test
+    cluster: eks-prow-build-cluster
     always_run: true
     optional: true # cannot be required because updates in csi-release-tools may include breaking changes
     decorate: true
@@ -50,37 +53,30 @@ presubmits:
     annotations:
       testgrid-dashboards: sig-storage-csi-other
       testgrid-tab-name: pull-csi-release-tools-in-csi-test
-      description: Kubernetes-CSI pull job in repo csi-release-tools for csi-test, using deployment 1.22 on Kubernetes 1.22
+      description: Kubernetes-CSI pull job in repo csi-release-tools for csi-test, using deployment 1.31 on Kubernetes 1.31
     spec:
       containers:
       # We need this image because it has Docker in Docker and go.
-      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         command:
         - runner.sh
         args:
         - ./pull-test.sh # provided by csi-release-tools
-        env:
-        - name: CSI_PROW_KUBERNETES_VERSION
-          value: "1.22.0"
-        - name: CSI_PROW_USE_BAZEL
-          value: "false"
-        - name: CSI_PROW_KUBERNETES_DEPLOYMENT
-          value: "1.22"
-        - name: CSI_PROW_DRIVER_VERSION
-          value: "v1.7.2"
-        - name: CSI_SNAPSHOTTER_VERSION
-          value: "v4.0.0"
-        - name: CSI_PROW_TESTS
-          value: "unit sanity parallel"
-        - name: PULL_TEST_REPO_DIR
-          value: /home/prow/go/src/github.com/kubernetes-csi/csi-test
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
         resources:
           requests:
-            cpu: 2000m
+            memory: "9Gi"
+            cpu: 4
+          limits:
+            memory: "9Gi"
+            cpu: 4
+        env:
+        - name: PULL_TEST_REPO_DIR
+          value: /home/prow/go/src/github.com/kubernetes-csi/csi-test
   - name: pull-kubernetes-csi-release-tools-external-provisioner
+    cluster: eks-prow-build-cluster
     always_run: true
     optional: true # cannot be required because updates in csi-release-tools may include breaking changes
     decorate: true
@@ -98,37 +94,40 @@ presubmits:
     annotations:
       testgrid-dashboards: sig-storage-csi-other
       testgrid-tab-name: pull-csi-release-tools-in-external-provisioner
-      description: Kubernetes-CSI pull job in repo csi-release-tools for external-provisioner, using deployment 1.22 on Kubernetes 1.22
+      description: Kubernetes-CSI pull job in repo csi-release-tools for external-provisioner, using deployment 1.31 on Kubernetes 1.31
     spec:
       containers:
       # We need this image because it has Docker in Docker and go.
-      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         command:
         - runner.sh
         args:
         - ./pull-test.sh # provided by csi-release-tools
-        env:
-        - name: CSI_PROW_KUBERNETES_VERSION
-          value: "1.22.0"
-        - name: CSI_PROW_USE_BAZEL
-          value: "false"
-        - name: CSI_PROW_KUBERNETES_DEPLOYMENT
-          value: "1.22"
-        - name: CSI_PROW_DRIVER_VERSION
-          value: "v1.7.2"
-        - name: CSI_SNAPSHOTTER_VERSION
-          value: "v4.0.0"
-        - name: CSI_PROW_TESTS
-          value: "unit sanity parallel"
-        - name: PULL_TEST_REPO_DIR
-          value: /home/prow/go/src/github.com/kubernetes-csi/external-provisioner
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
         resources:
           requests:
-            cpu: 2000m
+            memory: "9Gi"
+            cpu: 4
+          limits:
+            memory: "9Gi"
+            cpu: 4
+        env:
+        - name: PULL_TEST_REPO_DIR
+          value: /home/prow/go/src/github.com/kubernetes-csi/external-provisioner
+        - name: CSI_PROW_KUBERNETES_VERSION
+          value: "1.31.0"
+        - name: CSI_PROW_KUBERNETES_DEPLOYMENT
+          value: "1.31"
+        - name: CSI_PROW_DRIVER_VERSION
+          value: "v1.15.0"
+        - name: CSI_PROW_TESTS
+          value: "unit sanity parallel"
+        - name: CSI_SNAPSHOTTER_VERSION
+          value: "v6.1.0"
   - name: pull-kubernetes-csi-release-tools-external-snapshotter
+    cluster: eks-prow-build-cluster
     always_run: true
     optional: true # cannot be required because updates in csi-release-tools may include breaking changes
     decorate: true
@@ -146,37 +145,40 @@ presubmits:
     annotations:
       testgrid-dashboards: sig-storage-csi-other
       testgrid-tab-name: pull-csi-release-tools-in-external-snapshotter
-      description: Kubernetes-CSI pull job in repo csi-release-tools for external-snapshotter, using deployment 1.22 on Kubernetes 1.22
+      description: Kubernetes-CSI pull job in repo csi-release-tools for external-snapshotter, using deployment 1.31 on Kubernetes 1.31
     spec:
       containers:
       # We need this image because it has Docker in Docker and go.
-      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         command:
         - runner.sh
         args:
         - ./pull-test.sh # provided by csi-release-tools
-        env:
-        - name: CSI_PROW_KUBERNETES_VERSION
-          value: "1.22.0"
-        - name: CSI_PROW_USE_BAZEL
-          value: "false"
-        - name: CSI_PROW_KUBERNETES_DEPLOYMENT
-          value: "1.22"
-        - name: CSI_PROW_DRIVER_VERSION
-          value: "v1.7.2"
-        - name: CSI_SNAPSHOTTER_VERSION
-          value: "v4.0.0"
-        - name: CSI_PROW_TESTS
-          value: "unit sanity parallel"
-        - name: PULL_TEST_REPO_DIR
-          value: /home/prow/go/src/github.com/kubernetes-csi/external-snapshotter
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
         resources:
           requests:
-            cpu: 2000m
+            memory: "9Gi"
+            cpu: 4
+          limits:
+            memory: "9Gi"
+            cpu: 4
+        env:
+        - name: PULL_TEST_REPO_DIR
+          value: /home/prow/go/src/github.com/kubernetes-csi/external-snapshotter
+        - name: CSI_PROW_KUBERNETES_VERSION
+          value: "1.31.0"
+        - name: CSI_PROW_KUBERNETES_DEPLOYMENT
+          value: "1.31"
+        - name: CSI_PROW_DRIVER_VERSION
+          value: "v1.15.0"
+        - name: CSI_PROW_TESTS
+          value: "unit sanity parallel"
+        - name: CSI_SNAPSHOTTER_VERSION
+          value: "v6.1.0"
   - name: pull-kubernetes-csi-release-tools-csi-driver-host-path
+    cluster: eks-prow-build-cluster
     always_run: true
     optional: true # cannot be required because updates in csi-release-tools may include breaking changes
     decorate: true
@@ -194,33 +196,35 @@ presubmits:
     annotations:
       testgrid-dashboards: sig-storage-csi-other
       testgrid-tab-name: pull-csi-release-tools-in-csi-driver-host-path
-      description: Kubernetes-CSI pull job in repo csi-release-tools for csi-driver-host-path, using deployment 1.22 on Kubernetes 1.22
+      description: Kubernetes-CSI pull job in repo csi-release-tools for csi-driver-host-path, using deployment 1.31 on Kubernetes 1.31
     spec:
       containers:
       # We need this image because it has Docker in Docker and go.
-      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         command:
         - runner.sh
         args:
         - ./pull-test.sh # provided by csi-release-tools
-        env:
-        - name: CSI_PROW_KUBERNETES_VERSION
-          value: "1.22.0"
-        - name: CSI_PROW_USE_BAZEL
-          value: "false"
-        - name: CSI_PROW_KUBERNETES_DEPLOYMENT
-          value: "1.22"
-        - name: CSI_PROW_DRIVER_VERSION
-          value: "v1.7.2"
-        - name: CSI_SNAPSHOTTER_VERSION
-          value: "v4.0.0"
-        - name: CSI_PROW_TESTS
-          value: "unit sanity parallel"
-        - name: PULL_TEST_REPO_DIR
-          value: /home/prow/go/src/github.com/kubernetes-csi/csi-driver-host-path
         # docker-in-docker needs privileged mode
         securityContext:
           privileged: true
         resources:
           requests:
-            cpu: 2000m
+            memory: "9Gi"
+            cpu: 4
+          limits:
+            memory: "9Gi"
+            cpu: 4
+        env:
+        - name: PULL_TEST_REPO_DIR
+          value: /home/prow/go/src/github.com/kubernetes-csi/csi-driver-host-path
+        - name: CSI_PROW_KUBERNETES_VERSION
+          value: "1.31.0"
+        - name: CSI_PROW_KUBERNETES_DEPLOYMENT
+          value: "1.31"
+        - name: CSI_PROW_DRIVER_VERSION
+          value: "v1.15.0"
+        - name: CSI_PROW_TESTS
+          value: "unit sanity parallel"
+        - name: CSI_SNAPSHOTTER_VERSION
+          value: "v6.1.0"

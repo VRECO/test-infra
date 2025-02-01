@@ -1,3 +1,4 @@
+# Format is as follows.
 # default: global configuration to be applied to all repos
 # repos: list of repos with specific configuration to be applied in addition to default
 #   labels: list of labels - keys for each item: color, description, name, target, deleteAfter, previously
@@ -79,6 +80,12 @@ default:
         - name: area/platform/vsphere
         - name: sig/vmware
         - name: vmware
+    - color: 0052cc
+      description: Issues or PRs that should potentially be discussed in a Kubernetes community meeting.
+      name: area/community-meeting
+      target: both
+      prowPlugin: label
+      addedBy: anyone
     - color: 0ffa16
       description: Indicates a PR has been approved by an approver from all required OWNERS files.
       name: approved
@@ -308,7 +315,7 @@ default:
       target: both
       addedBy: humans
     - color: 15dd18
-      description: Indicates that a PR is ready to be merged.
+      description: '"Looks good to me", indicates that a PR is ready to be merged.'
       name: lgtm
       target: prs
       prowPlugin: lgtm
@@ -489,6 +496,12 @@ default:
       prowPlugin: label
       addedBy: anyone
     - color: d2b48c
+      description: Categorizes an issue or PR as relevant to SIG Etcd.
+      name: sig/etcd
+      target: both
+      prowPlugin: label
+      addedBy: anyone
+    - color: d2b48c
       description: Categorizes an issue or PR as relevant to SIG Instrumentation.
       name: sig/instrumentation
       target: both
@@ -548,12 +561,6 @@ default:
       prowPlugin: label
       addedBy: anyone
     - color: d2b48c
-      description: Categorizes an issue or PR as relevant to SIG Service Catalog.
-      name: sig/service-catalog
-      target: both
-      prowPlugin: label
-      addedBy: anyone
-    - color: d2b48c
       description: Categorizes an issue or PR as relevant to SIG Storage.
       name: sig/storage
       target: both
@@ -572,12 +579,6 @@ default:
       prowPlugin: label
       addedBy: anyone
     - color: d2b48c
-      description: Categorizes an issue or PR as relevant to SIG Usability.
-      name: sig/usability
-      target: both
-      prowPlugin: label
-      addedBy: anyone
-    - color: d2b48c
       description: Categorizes an issue or PR as relevant to SIG Windows.
       name: sig/windows
       target: both
@@ -591,6 +592,24 @@ default:
       addedBy: anyone
       previously:
         - name: wg/apply
+    - color: d2b48c
+      description: Categorizes an issue or PR as relevant to WG Batch.
+      name: wg/batch
+      target: both
+      prowPlugin: label
+      addedBy: anyone
+    - color: d2b48c
+      description: Categorizes an issue or PR as relevant to WG Data Protection.
+      name: wg/data-protection
+      target: both
+      prowPlugin: label
+      addedBy: anyone
+    - color: d2b48c
+      description: Categorizes an issue or PR as relevant to WG Device Management.
+      name: wg/device-management
+      target: both
+      prowPlugin: label
+      addedBy: anyone
     - color: d2b48c
       description: Categorizes an issue or PR as relevant to WG IOT Edge.
       name: wg/iot-edge
@@ -618,6 +637,12 @@ default:
     - color: d2b48c
       description: Categorizes an issue or PR as relevant to WG Reliability
       name: wg/reliability
+      target: both
+      prowPlugin: label
+      addedBy: anyone
+    - color: d2b48c
+      description: Categorizes an issue or PR as relevant to WG Serving.
+      name: wg/serving
       target: both
       prowPlugin: label
       addedBy: anyone
@@ -794,7 +819,12 @@ repos:
         description: Issues or PRs related to the upstream marketing team
         name: area/contributor-comms
         target: both
-        addedBy: humans
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to the annual reports
+        name: area/annual-reports
+        target: both
+        addedBy: label
   kubernetes/dns:
     labels:
       - color: 0052cc
@@ -844,6 +874,12 @@ repos:
         prowPlugin: label
         addedBy: anyone
       - color: d93f0b
+        description: Denotes that an issue has been opted in to a release
+        name: lead-opted-in
+        target: issues
+        prowPlugin: label
+        addedBy: SIG leads ONLY
+      - color: d93f0b
         description: Denotes an issue tracking an enhancement targeted for Alpha status
         name: stage/alpha
         target: issues
@@ -865,17 +901,20 @@ repos:
         description: Denotes an out-of-tree enhancement issue, which does not need to be tracked by the Release Team
         name: tracked/out-of-tree
         target: issues
-        addedBy: humans
+        prowPlugin: label
+        addedBy: Release enhancements team ONLY
       - color: e04338
         description: Denotes an enhancement issue is NOT actively being tracked by the Release Team
         name: tracked/no
         target: issues
-        addedBy: humans
+        prowPlugin: label
+        addedBy: Release enhancements team ONLY
       - color: 108737
         description: Denotes an enhancement issue is actively being tracked by the Release Team
         name: tracked/yes
         target: issues
-        addedBy: humans
+        prowPlugin: label
+        addedBy: Release enhancements team ONLY
   kubernetes/k8s.io:
     labels:
       - color: 0052cc
@@ -939,20 +978,8 @@ repos:
         previously:
           - name: area/infra/publishing-bot
       - color: 0052cc
-        description: sippy.k8s.io, code in apps/sippy/
-        name: area/apps/sippy
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
         description: slack.k8s.io, slack-infra, code in apps/slack-infra
         name: area/apps/slack-infra
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
-        description: release.triage.k8s.io, triage-party, code in apps/triageparty-release
-        name: area/apps/triageparty-release
         target: both
         prowPlugin: label
         addedBy: anyone
@@ -1002,6 +1029,12 @@ repos:
         prowPlugin: label
         addedBy: anyone
       - color: 0052cc
+        description: Code in registry.k8s.io/
+        name: area/registry.k8s.io
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
         description: Google Groups management, code in groups/
         name: area/groups
         target: both
@@ -1015,6 +1048,24 @@ repos:
         addedBy: anyone
         previously:
           - name: area/cluster-infra
+      - color: 0052cc
+        description: Issues or PRs related to Kubernetes AWS infrastructure
+        name: area/infra/aws
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to Kubernetes Azure infrastructure
+        name: area/infra/azure
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to Kubernetes GCP infrastructure
+        name: area/infra/gcp
+        target: both
+        prowPlugin: label
+        addedBy: anyone
       - color: 0052cc
         description: Issues or PRs related to monitoring of the Kubernetes project infrastructure
         name: area/infra/monitoring
@@ -1055,6 +1106,11 @@ repos:
         addedBy: anyone
         previously:
           - name: area/infra/terraform
+      - color: 0ffa16
+        description: Indicates a PR is trusted, used by tide for auto-merging PRs.
+        name: skip-review
+        target: prs
+        addedBy: autobump bot
   kubernetes/kubernetes:
     labels:
       - color: 0052cc
@@ -1093,16 +1149,19 @@ repos:
         name: area/e2e-test-framework
         target: both
         addedBy: label
-      - color: e11d21
-        description: Issues or PRs related to the hyperkube subproject
-        name: deprecated/hyperkube
-        target: both
-        addedBy: label
-        previously:
-          - name: area/hyperkube
       - color: 0052cc
         description: Issues or PRs related to Network Policy subproject
         name: area/network-policy
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to Node lifecycle
+        name: area/node-lifecycle
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to Pod lifecycle
+        name: area/pod-lifecycle
         target: both
         addedBy: label
       - color: 0052cc
@@ -1110,6 +1169,11 @@ repos:
         name: area/release-eng
         previously:
           - name: area/release-infra
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs involving stable metrics
+        name: area/stable-metrics
         target: both
         addedBy: label
       - color: e11d21
@@ -1514,6 +1578,12 @@ repos:
         prowPlugin: label
         addedBy: anyone
       - color: e9b3f9
+        description: Issues or PRs related to Bengali language
+        name: language/bn
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: e9b3f9
         description: Issues or PRs related to German language
         name: language/de
         target: both
@@ -1664,12 +1734,6 @@ repos:
         prowPlugin: label
         addedBy: anyone
       - color: 0052cc
-        description: Issues or PRs related to UX
-        name: area/ux
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
         description: Issues or PRs related to releasing
         name: area/release
         target: both
@@ -1694,58 +1758,20 @@ repos:
         prowPlugin: label
         addedBy: anyone
       - color: 0052cc
-        description: Issues or PRs related to machine lifecycle management
-        name: area/machine
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
-        description: Issues or PRs related to health
-        name: area/health
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
         description: Issues or PRs related to bootstrap providers
         name: area/bootstrap
         target: both
         prowPlugin: label
         addedBy: anyone
       - color: 0052cc
-        description: Issues or PRs related to docker provider
-        name: area/provider/docker
-        target: both
-        addedBy: label
-      - color: 0052cc
-        description: Issues or PRs related to operator
-        name: area/operator
+        description: Issues or PRs related to machine lifecycle management
+        name: area/machine
         target: both
         prowPlugin: label
         addedBy: anyone
-      - color: 0052cc
-        description: Issues or PRs related to cluster topology
-        name: area/topology
       - color: c7def8
         description: Categorizes issue or PR as related to design.
         name: kind/design
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
-        description: Issues or PRs related to the hosting of release artifacts
-        name: area/artifacts
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
-        description: Issues or PRs related to Cluster API code organization
-        name: area/code-organization
-        target: both
-        prowPlugin: label
-        addedBy: anyone
-      - color: 0052cc
-        description: Issues or PRs related to Cluster API and Kubernetes conformance tests
-        name: area/conformance
         target: both
         prowPlugin: label
         addedBy: anyone
@@ -1760,6 +1786,206 @@ repos:
         target: both
         addedBy: anyone
         prowPlugin: label
+      - color: 0052cc
+        description: Issues or PRs related to Runtime SDK
+        name: area/runtime-sdk
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to CAPBK
+        name: area/provider/bootstrap-kubeadm
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to KCP
+        name: area/provider/control-plane-kubeadm
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to the core provider
+        name: area/provider/core
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to the docker infrastructure provider
+        name: area/provider/infrastructure-docker
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to the in-memory infrastructure provider
+        name: area/provider/infrastructure-in-memory
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to machinehealthchecks
+        name: area/machinehealthcheck
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to machinedeployments
+        name: area/machinedeployment
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to machinesets
+        name: area/machineset
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to machinepools
+        name: area/machinepool
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to the clustercachetracker
+        name: area/clustercachetracker
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to clusterresourcesets
+        name: area/clusterresourceset
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to ipam
+        name: area/ipam
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to documentation
+        name: area/documentation
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to clusterclass
+        name: area/clusterclass
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to e2e testing
+        name: area/e2e-testing
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to utils
+        name: area/util
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to logging
+        name: area/logging
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to metrics
+        name: area/metrics
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to ci
+        name: area/ci
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to devtools
+        name: area/devtools
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: e11d21
+        description: PR is missing an area label
+        name: do-not-merge/needs-area
+        target: prs
+        prowPlugin: require-matching-label
+        addedBy: prow
+  kubernetes-sigs/cluster-api-operator:
+    labels:
+      - color: c7def8
+        description: Issues or PRs related to proposals.
+        name: kind/proposal
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: f6c5d8
+        description: Issues or PRs that need to be closed before the next CAPI Operator release
+        name: kind/release-blocking
+        target: both
+        prowPlugin: label
+        addedBy: approvers
+      - color: c7def8
+        description: Categorizes issue or PR as related to design.
+        name: kind/design
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to the APIs
+        name: area/api
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to UX
+        name: area/ux
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to releasing
+        name: area/release
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to testing
+        name: area/testing
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to upgrades
+        name: area/upgrades
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to the hosting of release artifacts
+        name: area/artifacts
+        target: both
+        prowPlugin: label
+        addedBy: anyone
+      - color: 0052cc
+        description: Issues or PRs related to security
+        name: area/security
+        target: both
+        addedBy: anyone
+        prowPlugin: label
+      - color: 0052cc
+        description: Issues or PRs related to ci
+        name: area/ci
+        target: both
+        prowPlugin: label
+        addedBy: anyone
   kubernetes-sigs/cluster-api-provider-azure:
     labels:
       - color: c7def8
@@ -1768,6 +1994,14 @@ repos:
         target: both
         prowPlugin: label
         addedBy: anyone
+  kubernetes-sigs/cluster-api-provider-gcp:
+    labels:
+      - color: 0052cc
+        description: Issues or PRs related to GKE
+        name: area/gke
+        target: both
+        addedBy: anyone
+        prowPlugin: label
   kubernetes-sigs/cluster-api-provider-aws:
     labels:
       - color: c2e0c6
@@ -1785,6 +2019,11 @@ repos:
       - color: 0052cc
         description: Issues or PRs related to Amazon EKS provider
         name: area/provider/eks
+        target: both
+        addedBy: label
+      - color: 0052cc
+        description: Issues or PRs related to Red Hat ROSA provider
+        name: area/provider/rosa
         target: both
         addedBy: label
       - color: 0052cc
@@ -1888,6 +2127,20 @@ repos:
         prowPlugin: label
         addedBy: anyone
       # End shared
+  kubernetes-sigs/cluster-api-provider-vsphere:
+      labels:
+      - color: 0052cc
+        description: Issues or PRs related to the govmomi mode
+        name: area/govmomi
+        target: both
+        addedBy: anyone
+        prowPlugin: label
+      - color: 0052cc
+        description: Issues or PRs related to the supervisor mode
+        name: area/supervisor
+        target: both
+        addedBy: anyone
+        prowPlugin: label
   kubernetes-sigs/krew:
     labels:
       - color: ee0000
@@ -1921,6 +2174,12 @@ repos:
         name: kind/user-story
         target: issues
         addedBy: humans
+      - color: c7def8
+        description: PRs related to Gateway Enhancement Proposal(GEP)
+        name: kind/gep
+        prowPlugin: label
+        target: prs
+        addedBy: anyone
   kubernetes-sigs/kind:
     labels:
       - color: 19abff
@@ -1970,3 +2229,23 @@ repos:
         target: both
         prowPlugin: label
         addedBy: anyone
+  kubernetes-sigs/kubespray:
+    labels:
+      - color: d4c5f9
+        description: Run every available tests
+        name: ci-full
+        target: prs
+        prowPlugin: label
+        addedBy: approvers or reviewers or members
+      - color: d4c5f9
+        description: Run a quick CI pipeline
+        name: ci-short
+        target: prs
+        prowPlugin: label
+        addedBy: approvers or reviewers or members
+      - color: d4c5f9
+        description: Run additional tests
+        name: ci-extended
+        target: prs
+        prowPlugin: label
+        addedBy: approvers or reviewers or members

@@ -27,7 +27,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"k8s.io/test-infra/prow/flagutil"
+	"sigs.k8s.io/prow/pkg/flagutil"
 )
 
 var re = regexp.MustCompile(`^([^@]+)@(.+)\.iam\.gserviceaccount\.com$`)
@@ -46,8 +46,8 @@ type options struct {
 	serviceAccount        string
 	addRoles              flagutil.Strings
 	removeRoles           flagutil.Strings
-	adds                  sets.String
-	removes               sets.String
+	adds                  sets.Set[string]
+	removes               sets.Set[string]
 	serviceAccountPrefix  string
 	serviceAccountProject string
 }
@@ -65,10 +65,10 @@ func (o options) validate() error {
 		return errors.New("--add or --remove required")
 	}
 
-	o.adds = sets.NewString(adds...)
-	o.removes = sets.NewString(removes...)
+	o.adds = sets.New[string](adds...)
+	o.removes = sets.New[string](removes...)
 	if both := o.adds.Intersection(o.removes); len(both) > 0 {
-		return fmt.Errorf("Cannot both add and remove roles: %v", both.List())
+		return fmt.Errorf("cannot both add and remove roles: %v", sets.List(both))
 	}
 	mat := re.FindStringSubmatch(o.serviceAccount)
 	if mat != nil {
@@ -152,7 +152,7 @@ func run(o options) error {
 			logrus.WithField("serviceAccount", user).Warn("Cannot parse prefix and project from service account")
 			return fmt.Errorf("validate account pre-existence: %w", err)
 		}
-		if cerr := create(o.serviceAccountProject, o.serviceAccountPrefix); err != nil {
+		if cerr := create(o.serviceAccountProject, o.serviceAccountPrefix); cerr != nil {
 			return fmt.Errorf("create account: %w", cerr)
 		}
 	}

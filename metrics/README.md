@@ -14,7 +14,7 @@ query: |
   select /* find the most recent time each job passed (may not be this week) */
     job,
     max(started) latest_pass
-  from `k8s-gubernator.build.all`
+  from `kubernetes-public.k8s_infra_kettle.all`
   where
     result = 'SUCCESS'
   group by job
@@ -56,9 +56,6 @@ jqfilter: |
 * weekly-consistency - compute overall weekly consistency for PRs
     - [Config](configs/weekly-consistency-config.yaml)
     - [weekly-consistency-latest.json](http://storage.googleapis.com/k8s-metrics/weekly-consistency-latest.json)
-* istio-job-flakes - compute overall weekly consistency for postsubmits
-    - [Config](configs/istio-flakes.yaml)
-    - [istio-job-flakes-latest.json](http://storage.googleapis.com/k8s-metrics/istio-job-flakes-latest.json)
 
 ## Adding a new metric
 
@@ -95,15 +92,9 @@ the metric name and persist for a year after their creation. Additionally,
 the latest filtered results for a metric are stored in the root of the
 k8s-metrics bucket and named with the format `METRICNAME-latest.json`.
 
-If a config specifies the optional jq filter used to create influxdb timeseries
-data points, then the job will use the filter to generate timeseries points from
-the raw query results.
-
-At one point, these points were uploaded to a system called velodrome, which had an influxdb instance where they can be used to create graphs and tables, but velodrome is no longer in existence.  This may be revised in the future.
-
 ## Query structure
 
-The `query` is written in `Standard SQL` which is really [BigQuery Standard SQL](https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax) that allows for working with arrays/repeated fields. Each sub-query, from the most indented out, will build a subtable that the outer query runs against. Any one of the sub query blocks can be run independently from the BigQuery console or opionally added to a test query config and run via the same `bigquery.py` line above.
+The `query` is written in `Standard SQL` which is really [BigQuery Standard SQL](https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax) that allows for working with arrays/repeated fields. Each sub-query, from the most indented out, will build a subtable that the outer query runs against. Any one of the sub query blocks can be run independently from the BigQuery console or optionally added to a test query config and run via the same `bigquery.py` line above.
 
 ## Consistency
 

@@ -9,6 +9,7 @@
 presubmits:
   kubernetes/perf-tests:
   - name: pull-perf-tests-100-adhoc
+    cluster: k8s-infra-prow-build
     always_run: false # This test needs to be triggered manually via `/test pull-perf-tests-100-adhoc`
     max_concurrency: 1 # Keep at 1 until we figure out a proper reservation system.
     skip_report: false # Report the status on github.
@@ -34,7 +35,7 @@ presubmits:
       testgrid-tab-name: pull-perf-tests-100-adhoc
     spec:
       containers:
-      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         command:
         - runner.sh
         - /workspace/scenarios/kubernetes_e2e.py
@@ -42,17 +43,17 @@ presubmits:
         - --cluster=
         - --extract=ci/latest
         - --gcp-nodes=100
-        - --gcp-project-type=scalability-presubmit-project
+        - --gcp-project-type=scalability-project
         - --gcp-zone=us-east1-b
         - --provider=gce
         - --tear-down-previous
         - # TODO(pohly@): Custom overrides, clean up after finishing the tests.
-        - --env=CONTROLLER_MANAGER_TEST_ARGS=--profiling --kube-api-qps=1000 --kube-api-burst=1000
+        - --env=CONTROLLER_MANAGER_TEST_ARGS=--profiling --contention-profiling --kube-api-qps=1000 --kube-api-burst=1000
         - --test=false
         - --test-cmd=$GOPATH/src/k8s.io/perf-tests/adhoc/run-e2e-test.sh
         - --timeout=100m
         - --use-logexporter
-        - --logexporter-gcs-path=gs://sig-scalability-logs/$(JOB_NAME)/$(BUILD_ID)
+        - --logexporter-gcs-path=gs://k8s-infra-scalability-tests-logs/$(JOB_NAME)/$(BUILD_ID)
         # The resources are set to support a 100 node CL2 test.
         resources:
           limits:

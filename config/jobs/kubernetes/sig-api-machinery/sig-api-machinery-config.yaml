@@ -1,42 +1,19 @@
 periodics:
-- interval: 30m
-  name: ci-kubernetes-e2e-gci-gce-proto
-  labels:
-    preset-service-account: "true"
-    preset-k8s-ssh: "true"
-  spec:
-    containers:
-    - args:
-      - --timeout=70
-      - --bare
-      - --scenario=kubernetes_e2e
-      - --
-      - --check-leaked-resources
-      - --env=STORAGE_MEDIA_TYPE=application/vnd.kubernetes.protobuf
-      - --extract=ci/latest
-      - --gcp-node-image=gci
-      - --gcp-zone=us-west1-b
-      - --ginkgo-parallel=25
-      - --provider=gce
-      - --test_args=--ginkgo.skip=\[Driver:.gcepd\]|\[Slow\]|\[Serial\]|\[Disruptive\]|\[Flaky\]|\[Feature:.+\] --minStartupPods=8
-      - --timeout=50m
-      image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
-  annotations:
-    testgrid-dashboards: google-gce
-    testgrid-tab-name: gci-gce-proto
-
 - interval: 2h
   name: ci-kubernetes-e2e-gci-gce-network-proxy-http-connect
+  cluster: k8s-infra-prow-build
   labels:
     preset-service-account: "true"
     preset-k8s-ssh: "true"
+  decorate: true
+  decoration_config:
+    timeout: 80m
   spec:
     containers:
-    - args:
-      - --timeout=80
-      - --bare
-      - --scenario=kubernetes_e2e
-      - --
+    - command:
+      - runner.sh
+      - /workspace/scenarios/kubernetes_e2e.py
+      args:
       - --check-leaked-resources
       - --env=PREPARE_KONNECTIVITY_SERVICE=true
       - --env=RUN_KONNECTIVITY_PODS=true
@@ -49,21 +26,31 @@ periodics:
       - --provider=gce
       - --test_args=--ginkgo.skip=\[Driver:.gcepd\]|\[Slow\]|\[Serial\]|\[Disruptive\]|\[Flaky\]|\[Feature:.+\] --minStartupPods=9
       - --timeout=60m
-      image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
+      resources:
+        requests:
+          cpu: 2
+          memory: 6Gi
+        limits:
+          cpu: 2
+          memory: 6Gi
   annotations:
     testgrid-dashboards: sig-api-machinery-network-proxy
 - interval: 2h
   name: ci-kubernetes-e2e-gci-gce-network-proxy-grpc
+  cluster: k8s-infra-prow-build
   labels:
     preset-service-account: "true"
     preset-k8s-ssh: "true"
+  decorate: true
+  decoration_config:
+    timeout: 80m
   spec:
     containers:
-    - args:
-      - --timeout=80
-      - --bare
-      - --scenario=kubernetes_e2e
-      - --
+    - command:
+      - runner.sh
+      - /workspace/scenarios/kubernetes_e2e.py
+      args:
       - --check-leaked-resources
       - --env=PREPARE_KONNECTIVITY_SERVICE=true
       - --env=RUN_KONNECTIVITY_PODS=true
@@ -76,7 +63,14 @@ periodics:
       - --provider=gce
       - --test_args=--ginkgo.skip=\[Driver:.gcepd\]|\[Slow\]|\[Serial\]|\[Disruptive\]|\[Flaky\]|\[Feature:.+\] --minStartupPods=9
       - --timeout=60m
-      image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
+      resources:
+        requests:
+          cpu: 2
+          memory: 6Gi
+        limits:
+          cpu: 2
+          memory: 6Gi
   annotations:
     testgrid-dashboards: sig-api-machinery-network-proxy
 
@@ -92,19 +86,23 @@ presubmits:
       preset-dind-enabled: "true"
       preset-pull-kubernetes-e2e: "true"
       preset-pull-kubernetes-e2e-gce: "true"
+    decorate: true
+    decoration_config:
+      timeout: 105m
+    path_alias: k8s.io/kubernetes
+    extra_refs:
+    - org: kubernetes
+      repo: release
+      base_ref: master
+      path_alias: k8s.io/release
     spec:
       containers:
-      - args:
-        - --root=/go/src
-        - --repo=k8s.io/kubernetes=$(PULL_REFS)
-        - --repo=k8s.io/release
-        - --upload=gs://kubernetes-jenkins/pr-logs
-        - --timeout=105
-        - --scenario=kubernetes_e2e
-        - --
+      - command:
+        - runner.sh
+        - /workspace/scenarios/kubernetes_e2e.py
+        args:
         - --build=quick
         - --cluster=
-        - --extract=local
         - --env=PREPARE_KONNECTIVITY_SERVICE=true
         - --env=RUN_KONNECTIVITY_PODS=true
         - --env=EGRESS_VIA_KONNECTIVITY=true
@@ -112,11 +110,10 @@ presubmits:
         - --gcp-node-image=gci
         - --gcp-zone=us-west1-b
         - --ginkgo-parallel=30
-        - --stage=gs://kubernetes-release-pull/ci/pull-kubernetes-e2e-gce-network-proxy-http-connect
         - --provider=gce
         - --test_args=--ginkgo.skip=\[Driver:.gcepd\]|\[Slow\]|\[Serial\]|\[Disruptive\]|\[Flaky\]|\[Feature:.+\] --minStartupPods=9
         - --timeout=80m
-        image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+        image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         resources:
           requests:
             cpu: 2
@@ -139,19 +136,23 @@ presubmits:
       preset-dind-enabled: "true"
       preset-pull-kubernetes-e2e: "true"
       preset-pull-kubernetes-e2e-gce: "true"
+    decorate: true
+    decoration_config:
+      timeout: 105m
+    path_alias: k8s.io/kubernetes
+    extra_refs:
+    - org: kubernetes
+      repo: release
+      base_ref: master
+      path_alias: k8s.io/release
     spec:
       containers:
-      - args:
-        - --root=/go/src
-        - --repo=k8s.io/kubernetes=$(PULL_REFS)
-        - --repo=k8s.io/release
-        - --upload=gs://kubernetes-jenkins/pr-logs
-        - --timeout=105
-        - --scenario=kubernetes_e2e
-        - --
+      - command:
+        - runner.sh
+        - /workspace/scenarios/kubernetes_e2e.py
+        args:
         - --build=quick
         - --cluster=
-        - --extract=local
         - --env=PREPARE_KONNECTIVITY_SERVICE=true
         - --env=RUN_KONNECTIVITY_PODS=true
         - --env=EGRESS_VIA_KONNECTIVITY=true
@@ -159,11 +160,10 @@ presubmits:
         - --gcp-node-image=gci
         - --gcp-zone=us-west1-b
         - --ginkgo-parallel=30
-        - --stage=gs://kubernetes-release-pull/ci/pull-kubernetes-e2e-gce-network-proxy-grpc
         - --provider=gce
         - --test_args=--ginkgo.skip=\[Driver:.gcepd\]|\[Slow\]|\[Serial\]|\[Disruptive\]|\[Flaky\]|\[Feature:.+\] --minStartupPods=9
         - --timeout=80m
-        image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+        image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
         resources:
           requests:
             cpu: 4

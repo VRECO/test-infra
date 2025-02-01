@@ -13,23 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# generic runner script, handles DIND, bazelrc for caching, etc.
-
-# Check if the job has opted-in to bazel remote caching and if so generate 
-# .bazelrc entries pointing to the remote cache
-export BAZEL_REMOTE_CACHE_ENABLED=${BAZEL_REMOTE_CACHE_ENABLED:-false}
-if [[ "${BAZEL_REMOTE_CACHE_ENABLED}" == "true" ]]; then
-    echo "Bazel remote cache is enabled, generating .bazelrcs ..."
-    /usr/local/bin/create_bazel_cache_rcs.sh
-fi
-
+# generic runner script, handles DIND, etc.
 
 # runs custom docker data root cleanup binary and debugs remaining resources
 cleanup_dind() {
     if [[ "${DOCKER_IN_DOCKER_ENABLED:-false}" == "true" ]]; then
+        echo "Waiting 30 seconds for pods stopped with terminationGracePeriod:30"
+        sleep 30
         echo "Cleaning up after docker"
         docker ps -aq | xargs -r docker rm -f || true
-        service docker stop || true
+        echo "Waiting for docker to stop for 30 seconds"
+        timeout 30 service docker stop || true
+        # force kill docker related processes
+        (cat /var/run/docker*.pid | xargs kill -9) || true
     fi
 }
 
@@ -40,31 +36,24 @@ early_exit_handler() {
     cleanup_dind
 }
 
-# optionally enable ipv6 docker
-export DOCKER_IN_DOCKER_IPV6_ENABLED=${DOCKER_IN_DOCKER_IPV6_ENABLED:-false}
-if [[ "${DOCKER_IN_DOCKER_IPV6_ENABLED}" == "true" ]]; then
-    echo "Enabling IPV6 for Docker."
-    # configure the daemon with ipv6
-    mkdir -p /etc/docker/
-    cat <<EOF >/etc/docker/daemon.json
-{
-  "ipv6": true,
-  "fixed-cidr-v6": "fc00:db8:1::/64"
-}
-EOF
-    # enable ipv6
-    sysctl net.ipv6.conf.all.disable_ipv6=0
-    sysctl net.ipv6.conf.all.forwarding=1
-    # enable ipv6 iptables
-    modprobe -v ip6table_nat
-fi
-
 # Check if the job has opted-in to docker-in-docker availability.
 export DOCKER_IN_DOCKER_ENABLED=${DOCKER_IN_DOCKER_ENABLED:-false}
 if [[ "${DOCKER_IN_DOCKER_ENABLED}" == "true" ]]; then
     echo "Docker in Docker enabled, initializing..."
     printf '=%.0s' {1..80}; echo
-    # If we have opted in to docker in docker, start the docker daemon,
+
+    # docker v27+ has ipv6 by default, but not all e2e hosts have everything
+    # we need enabled by default
+    # enable ipv6
+    sysctl net.ipv6.conf.all.disable_ipv6=0
+    sysctl net.ipv6.conf.all.forwarding=1
+    # enable ipv6 iptables
+    modprobe -v ip6table_nat
+
+    # Fix ulimit issue
+    sed -i 's|ulimit -Hn|ulimit -n|' /etc/init.d/docker || true
+
+    # start the docker daemon
     service docker start
     # the service can be started but the docker socket not ready, wait for ready
     WAIT_N=0

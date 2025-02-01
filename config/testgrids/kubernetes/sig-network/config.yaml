@@ -1,19 +1,22 @@
 dashboard_groups:
 - name: sig-network
   dashboard_names:
-    - sig-network-dualstack-azure-e2e
     - sig-network-dns
     - sig-network-external-dns
     - sig-network-gce
+    - sig-network-ingate
     - sig-network-ingress-gce-e2e
     - sig-network-ingress-nginx
     - sig-network-gateway-api
+    - sig-network-ingress2gateway
+    - sig-network-policy-api
     - sig-network-ingress-controller-conformance
     - sig-network-kind
+    - sig-network-node-ipam-controller
+    - sig-network-gwctl
 
 dashboards:
 - name: sig-network-dns
-- name: sig-network-dualstack-azure-e2e
 - name: sig-network-external-dns
 - name: sig-network-gce
   dashboard_tab:
@@ -29,12 +32,10 @@ dashboards:
       test_group_name: ci-kubernetes-e2e-gce-cos-k8sstable1-ingress
       alert_options:
         alert_mail_to_addresses: kubernetes-sig-network-test-failures@googlegroups.com
+    # TODO(1.30): Uncomment this when adding jobs for release-1.30 branch.
+    # TODO(1.29): comment this out when we move 1.29 to stable1
     - name: gce-cos-1.14-ingress
       test_group_name: ci-kubernetes-e2e-gce-cos-k8sbeta-ingress
-      alert_options:
-        alert_mail_to_addresses: kubernetes-sig-network-test-failures@googlegroups.com
-    - name: gci-gce-ip-alias
-      test_group_name: ci-kubernetes-e2e-gci-gce-ip-alias
       alert_options:
         alert_mail_to_addresses: kubernetes-sig-network-test-failures@googlegroups.com
     - name: gci-gce-ipvs
@@ -93,8 +94,13 @@ dashboards:
       alert_options:
         alert_mail_to_addresses: kubernetes-sig-network-test-failures@googlegroups.com
 
+- name: sig-network-ingate
 - name: sig-network-ingress-gce-e2e
 - name: sig-network-ingress-nginx
 - name: sig-network-gateway-api
+- name: sig-network-ingress2gateway
+- name: sig-network-policy-api
 - name: sig-network-ingress-controller-conformance
 - name: sig-network-kind
+- name: sig-network-node-ipam-controller
+- name: sig-network-gwctl

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import zlib
-
-import boto3 # pylint: disable=import-error
 
 # We support rapid focus on a few tests of high concern
 # This should be used for temporary tests we are evaluating,
@@ -23,11 +22,9 @@ run_hourly = [
 ]
 
 run_daily = [
-    'kops-grid-scenario-service-account-iam',
-    'kops-grid-scenario-arm64',
-    'kops-grid-scenario-serial-test-for-timeout',
-    'kops-grid-scenario-terraform',
 ]
+
+script_dir = os.path.dirname(os.path.realpath(__file__))
 
 def simple_hash(s):
     # & 0xffffffff avoids python2/python3 compatibility
@@ -80,30 +77,28 @@ def should_skip_newer_k8s(k8s_version, kops_version):
     return float(k8s_version) > float(kops_version)
 
 def k8s_version_info(k8s_version):
-    test_package_bucket = ''
+    test_package_url = ''
     test_package_dir = ''
     if k8s_version == 'latest':
         marker = 'latest.txt'
-        k8s_deploy_url = "https://storage.googleapis.com/kubernetes-release/release/latest.txt"
+        k8s_deploy_url = "https://dl.k8s.io/release/latest.txt"
     elif k8s_version == 'ci':
         marker = 'latest.txt'
         k8s_deploy_url = "https://storage.googleapis.com/k8s-release-dev/ci/latest.txt"
-        test_package_bucket = 'k8s-release-dev'
+        test_package_url = 'https://storage.googleapis.com/k8s-release-dev'
         test_package_dir = 'ci'
     elif k8s_version == 'stable':
         marker = 'stable.txt'
-        k8s_deploy_url = "https://storage.googleapis.com/kubernetes-release/release/stable.txt"
+        k8s_deploy_url = "https://dl.k8s.io/release/stable.txt"
     elif k8s_version:
         marker = f"stable-{k8s_version}.txt"
-        k8s_deploy_url = f"https://storage.googleapis.com/kubernetes-release/release/stable-{k8s_version}.txt" # pylint: disable=line-too-long
+        k8s_deploy_url = f"https://dl.k8s.io/release/stable-{k8s_version}.txt" # pylint: disable=line-too-long
     else:
         raise Exception('missing required k8s_version')
-    return marker, k8s_deploy_url, test_package_bucket, test_package_dir
+    return marker, k8s_deploy_url, test_package_url, test_package_dir
 
-def create_args(kops_channel, networking, container_runtime, extra_flags, kops_image):
+def create_args(kops_channel, networking, extra_flags, kops_image):
     args = f"--channel={kops_channel} --networking=" + networking
-    if container_runtime:
-        args += f" --container-runtime={container_runtime}"
 
     image_overridden = False
     if extra_flags:
@@ -115,7 +110,44 @@ def create_args(kops_channel, networking, container_runtime, extra_flags, kops_i
         args = f"--image='{kops_image}' {args}"
     return args.strip()
 
-def latest_aws_image(owner, name, arm64=False):
+# The pin file contains a list of key=value pairs, that holds images we want to pin.
+# This enables us to use the latest image without fetching them from AWS every time.
+def pinned_file():
+    return os.path.join(script_dir, 'pinned.list')
+
+# get_pinned returns the pinned value for the given key, or None if the key is not found
+def get_pinned(key):
+    # Read pinned file, which is a list of key=value pairs
+    # If the key is not found, return None
+    # Ignore if the file is not found
+    try:
+        with open(pinned_file(), 'r') as f:
+            s = f.read().strip()
+        for line in s.split('\n'):
+            k, v = line.split('=', 1)
+            if k == key:
+                return v
+        return None
+    except FileNotFoundError:
+        return None
+
+# set_pinned appends a key=value pair to the pinned file
+def set_pinned(key, value):
+    # Append to the pinned file, which is a list of key=value pairs
+    with open(pinned_file(), 'a') as f:
+        f.write(f"{key}={value}\n")
+
+# latest_aws_image returns the latest AWS image for the given owner, name, and arch
+# If the image is pinned, it returns the pinned image
+# Otherwise, it fetches the latest image from AWS and pins it
+def latest_aws_image(owner, name, arch='x86_64'):
+    pin = "aws://images/" + owner + "/" + name + ":" + arch
+    image = get_pinned(pin)
+    if image:
+        return image
+
+    import boto3 # pylint: disable=import-error, import-outside-toplevel
+
     client = boto3.client('ec2', region_name='us-east-1')
     response = client.describe_images(
         Owners=[owner],
@@ -129,42 +161,53 @@ def latest_aws_image(owner, name, arm64=False):
             {
                 'Name': 'architecture',
                 'Values': [
-                    'arm64' if arm64 else 'x86_64',
+                    arch
                 ],
             },
         ],
     )
-    images = {}
+    images = []
     for image in response['Images']:
-        images[image['CreationDate']] = image['ImageLocation']
-    return images[sorted(images, reverse=True)[0]]
+        images.append(image['ImageLocation'].replace('amazon', owner))
+    images.sort(reverse=True)
+    image = images[0]
+    set_pinned(pin, image)
+    return image
 
 distro_images = {
+    'al2023': latest_aws_image('137112412989', 'al2023-ami-2*-kernel-6.1-x86_64'),
     'amzn2': latest_aws_image('137112412989', 'amzn2-ami-kernel-5.10-hvm-*-x86_64-gp2'),
-    'deb9': latest_aws_image('379101102735', 'debian-stretch-hvm-x86_64-gp2-*'),
     'deb10': latest_aws_image('136693071363', 'debian-10-amd64-*'),
     'deb11': latest_aws_image('136693071363', 'debian-11-amd64-*'),
-    'flatcar': latest_aws_image('075585003325', 'Flatcar-stable-*-hvm'),
-    'rhel7': latest_aws_image('309956199498', 'RHEL-7.*_HVM_*-x86_64-0-Hourly2-GP2'),
-    'rhel8': latest_aws_image('309956199498', 'RHEL-8.*_HVM-*-x86_64-0-Hourly2-GP2'),
-    'u1804': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*'), # pylint: disable=line-too-long
+    'deb12': latest_aws_image('136693071363', 'debian-12-amd64-*'),
+    'flatcar': latest_aws_image('075585003325', 'Flatcar-beta-*-hvm'),
+    'flatcararm64': latest_aws_image('075585003325', 'Flatcar-beta-*-hvm', 'arm64'),
+    'rhel8': latest_aws_image('309956199498', 'RHEL-8.*_HVM-*-x86_64-*'),
+    'rhel9': latest_aws_image('309956199498', 'RHEL-9.*_HVM-*-x86_64-*'),
+    'rocky9': latest_aws_image('792107900819', 'Rocky-9-EC2-Base-9.*.x86_64'),
     'u2004': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*'), # pylint: disable=line-too-long
-    'u2004arm64': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd/ubuntu-focal-20.04-arm64-server-*', True), # pylint: disable=line-too-long
-    'u2110': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd/ubuntu-impish-21.10-amd64-server-*'), # pylint: disable=line-too-long
-    'u2204': latest_aws_image('099720109477', 'ubuntu/images-testing/hvm-ssd/ubuntu-jammy-daily-amd64-server-*'), # pylint: disable=line-too-long
+    'u2004arm64': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd/ubuntu-focal-20.04-arm64-server-*', 'arm64'), # pylint: disable=line-too-long
+    'u2204': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*'), # pylint: disable=line-too-long
+    'u2204arm64': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-arm64-server-*', 'arm64'), # pylint: disable=line-too-long
+    'u2404': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*'), # pylint: disable=line-too-long
+    'u2404arm64': latest_aws_image('099720109477', 'ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-arm64-server-*', 'arm64'), # pylint: disable=line-too-long
 }
 
 distros_ssh_user = {
+    'al2023': 'ec2-user',
     'amzn2': 'ec2-user',
-    'deb9': 'admin',
     'deb10': 'admin',
     'deb11': 'admin',
+    'deb12': 'admin',
     'flatcar': 'core',
-    'rhel7': 'ec2-user',
+    'flatcararm64': 'core',
     'rhel8': 'ec2-user',
-    'u1804': 'ubuntu',
+    'rhel9': 'ec2-user',
+    'rocky9': 'rocky',
     'u2004': 'ubuntu',
     'u2004arm64': 'ubuntu',
-    'u2110': 'ubuntu',
     'u2204': 'ubuntu',
+    'u2204arm64': 'ubuntu',
+    'u2404': 'ubuntu',
+    'u2404arm64': 'ubuntu',
 }

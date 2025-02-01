@@ -38,13 +38,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	cfg "k8s.io/test-infra/prow/config"
-	configflagutil "k8s.io/test-infra/prow/flagutil/config"
+	cfg "sigs.k8s.io/prow/pkg/config"
+	configflagutil "sigs.k8s.io/prow/pkg/flagutil/config"
 )
 
 // TODO: parse testgrid config to catch
-//	- jobs that aren't prowjobs but are on release-informing dashboards
-//	- jobs that don't declare testgrid info via annotations
+//   - jobs that aren't prowjobs but are on release-informing dashboards
+//   - jobs that don't declare testgrid info via annotations
 var reportFormat = flag.String("format", "csv", "Output format [csv|json|html] defaults to csv")
 var reportDate = flag.String("date", "now", "Date to include in report ('now' is converted to today)")
 

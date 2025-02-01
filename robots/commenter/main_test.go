@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/test-infra/prow/github"
+	"sigs.k8s.io/prow/pkg/github"
 )
 
 func TestParseHTMLURL(t *testing.T) {
@@ -64,7 +64,7 @@ func TestParseHTMLURL(t *testing.T) {
 		},
 		{
 			name: "weird issue",
-			url:  "https://gubernator.k8s.io/build/kubernetes-jenkins/logs/ci-kubernetes-e2e-gci-gce/11947/",
+			url:  "https://gubernator.k8s.io/build/kubernetes-ci-logs/logs/ci-kubernetes-e2e-gci-gce/11947/",
 			fail: true,
 		},
 	}

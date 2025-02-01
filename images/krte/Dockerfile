@@ -16,12 +16,13 @@
 # NOTE: we attempt to avoid unnecessary tools and image layers while
 # supporting kubernetes builds, kind installation, etc.
 
-FROM debian:buster
+FROM debian:bookworm
 
 # arg that specifies the image name (for debugging)
 ARG IMAGE_ARG
 
-# arg that specifies the go version to install
+# arg that specifies the go version to install.
+# empty value specifies the latest version.
 ARG GO_VERSION
 
 # add envs:
@@ -41,8 +42,8 @@ COPY wrapper.sh /usr/local/bin/
 
 # Install tools needed to:
 # - install docker
-# - build kind (dockerized)
-# - build kubernetes (dockerized, or with bazel)
+# - build kind
+# - build kubernetes
 #
 # TODO: the `sed` is a bit of a hack, look into alternatives.
 # Why this exists: `docker service start` on debian runs a `cgroupfs_mount` method,
@@ -59,21 +60,21 @@ RUN echo "Installing Packages ..." \
             file \
             git \
             gnupg2 \
+            iproute2 \
             kmod \
             lsb-release \
             mercurial \
             pkg-config \
             procps \
-            python \
-            python-dev \
-            python-pip \
+            python3 \
             rsync \
             software-properties-common \
             unzip \
         && rm -rf /var/lib/apt/lists/* \
     && echo "Installing Go ..." \
-        && export GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz"\
-        && curl -fsSL "https://storage.googleapis.com/golang/${GO_TARBALL}" --output "${GO_TARBALL}" \
+        && if [ -z "${GO_VERSION}" ]; then GO_VERSION=$(curl -fsSL https://go.dev/VERSION?m=text | grep -oP "go\K(.*)"); fi \
+        && export GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz" \
+        && curl -fsSL "https://go.dev/dl/${GO_TARBALL}" --output "${GO_TARBALL}" \
         && tar xzf "${GO_TARBALL}" -C /usr/local \
         && rm "${GO_TARBALL}"\
         && mkdir -p "${GOPATH}/bin" \
@@ -88,14 +89,16 @@ RUN echo "Installing Packages ..." \
             --usage-reporting=false \
         && gcloud components install kubectl \
     && echo "Installing Docker ..." \
-        && curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | apt-key add - \
-        && add-apt-repository \
-            "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
-            $(lsb_release -cs) stable" \
+        && curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+        && chmod a+r /etc/apt/keyrings/docker.gpg \
+        && echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+            "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+            tee /etc/apt/sources.list.d/docker.list > /dev/null \
         && apt-get update \
-        && apt-get install -y --no-install-recommends docker-ce \
+        && apt-get install -y --no-install-recommends docker-ce docker-buildx-plugin \
         && rm -rf /var/lib/apt/lists/* \
         && sed -i 's/cgroupfs_mount$/#cgroupfs_mount\n/' /etc/init.d/docker \
+        && sed -i 's/ulimit -Hn/# ulimit -Hn/g' /etc/init.d/docker \
     && echo "Ensuring Legacy Iptables ..." \
         && update-alternatives --set iptables /usr/sbin/iptables-legacy \
         && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy

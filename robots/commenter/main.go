@@ -36,9 +36,9 @@ import (
 	"text/template"
 	"time"
 
-	"k8s.io/test-infra/prow/config/secret"
-	"k8s.io/test-infra/prow/flagutil"
-	"k8s.io/test-infra/prow/github"
+	"sigs.k8s.io/prow/pkg/config/secret"
+	"sigs.k8s.io/prow/pkg/flagutil"
+	"sigs.k8s.io/prow/pkg/github"
 )
 
 const (
@@ -86,7 +86,6 @@ type meta struct {
 }
 
 type options struct {
-	asc             bool
 	ceiling         int
 	comment         string
 	includeArchived bool
@@ -94,7 +93,6 @@ type options struct {
 	includeLocked   bool
 	useTemplate     bool
 	query           string
-	sort            string
 	endpoint        flagutil.Strings
 	graphqlEndpoint string
 	token           string
@@ -185,9 +183,12 @@ func main() {
 
 	var c client
 	if o.confirm {
-		c = github.NewClient(secret.GetTokenGenerator(o.token), secret.Censor, o.graphqlEndpoint, o.endpoint.Strings()...)
+		c, err = github.NewClient(secret.GetTokenGenerator(o.token), secret.Censor, o.graphqlEndpoint, o.endpoint.Strings()...)
 	} else {
-		c = github.NewDryRunClient(secret.GetTokenGenerator(o.token), secret.Censor, o.graphqlEndpoint, o.endpoint.Strings()...)
+		c, err = github.NewDryRunClient(secret.GetTokenGenerator(o.token), secret.Censor, o.graphqlEndpoint, o.endpoint.Strings()...)
+	}
+	if err != nil {
+		log.Fatalf("Failed to construct GitHub client: %v", err)
 	}
 
 	query, err := makeQuery(o.query, o.includeArchived, o.includeClosed, o.includeLocked, o.updated)
@@ -229,7 +230,6 @@ func run(c client, query, sort string, asc, random bool, commenter func(meta) (s
 	problems := []string{}
 	log.Printf("Found %d matches", len(issues))
 	if random {
-		rand.Seed(time.Now().UnixNano())
 		rand.Shuffle(len(issues), func(i, j int) {
 			issues[i], issues[j] = issues[j], issues[i]
 		})

@@ -26,8 +26,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/test-infra/prow/config"
-	configflagutil "k8s.io/test-infra/prow/flagutil/config"
+	"sigs.k8s.io/prow/pkg/config"
+	configflagutil "sigs.k8s.io/prow/pkg/flagutil/config"
 )
 
 type options struct {
@@ -47,7 +47,6 @@ var (
 		"k8s-jkns-pr-kubemark",
 		"k8s-jkns-pr-node-e2e",
 		"k8s-jkns-pr-gce-gpus",
-		"k8s-presubmit-scale",
 		// k8s-infra projects, can't be cleaned by k8s-prow serviceaccounts
 		"k8s-infra-e2e-scale-5k-project",
 		"k8s-infra-e2e-gpu-project",

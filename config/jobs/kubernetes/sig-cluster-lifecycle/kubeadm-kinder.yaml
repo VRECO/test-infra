@@ -2,6 +2,7 @@
 periodics:
 
 - name: ci-kubernetes-e2e-kubeadm-kinder-latest
+  cluster: eks-prow-build-cluster
   interval: 2h
   decorate: true
   labels:
@@ -28,7 +29,7 @@ periodics:
     path_alias: k8s.io/kubeadm
   spec:
     containers:
-    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
       command:
       - runner.sh
       - "../kubeadm/kinder/ci/kinder-run.sh"
@@ -37,19 +38,23 @@ periodics:
       securityContext:
         privileged: true
       resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
         requests:
           memory: "9000Mi"
           cpu: 2000m
 
-- name: ci-kubernetes-e2e-kubeadm-kinder-1-23
+- name: ci-kubernetes-e2e-kubeadm-kinder-1-32
+  cluster: eks-prow-build-cluster
   interval: 12h
   decorate: true
   labels:
     preset-dind-enabled: "true"
     preset-kind-volume-mounts: "true"
   annotations:
-    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.23-informing
-    testgrid-tab-name: kubeadm-kinder-1-23
+    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.32-informing
+    testgrid-tab-name: kubeadm-kinder-1-32
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io, release-team@kubernetes.io
     description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster and run kubeadm-e2e and the conformance suite"
     testgrid-num-columns-recent: "20"
@@ -60,7 +65,7 @@ periodics:
   extra_refs:
   - org: kubernetes
     repo: kubernetes
-    base_ref: release-1.23
+    base_ref: release-1.32
     path_alias: k8s.io/kubernetes
   - org: kubernetes
     repo: kubeadm
@@ -68,28 +73,32 @@ periodics:
     path_alias: k8s.io/kubeadm
   spec:
     containers:
-    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-1.23
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-1.32
       command:
       - runner.sh
       - "../kubeadm/kinder/ci/kinder-run.sh"
       args:
-      - "regular-1.23"
+      - "regular-1.32"
       securityContext:
         privileged: true
       resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
         requests:
           memory: "9000Mi"
           cpu: 2000m
 
-- name: ci-kubernetes-e2e-kubeadm-kinder-1-22
+- name: ci-kubernetes-e2e-kubeadm-kinder-1-31
+  cluster: eks-prow-build-cluster
   interval: 12h
   decorate: true
   labels:
     preset-dind-enabled: "true"
     preset-kind-volume-mounts: "true"
   annotations:
-    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.22-informing
-    testgrid-tab-name: kubeadm-kinder-1-22
+    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.31-informing
+    testgrid-tab-name: kubeadm-kinder-1-31
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io, release-team@kubernetes.io
     description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster and run kubeadm-e2e and the conformance suite"
     testgrid-num-columns-recent: "20"
@@ -100,7 +109,7 @@ periodics:
   extra_refs:
   - org: kubernetes
     repo: kubernetes
-    base_ref: release-1.22
+    base_ref: release-1.31
     path_alias: k8s.io/kubernetes
   - org: kubernetes
     repo: kubeadm
@@ -108,28 +117,32 @@ periodics:
     path_alias: k8s.io/kubeadm
   spec:
     containers:
-    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-1.22
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-1.31
       command:
       - runner.sh
       - "../kubeadm/kinder/ci/kinder-run.sh"
       args:
-      - "regular-1.22"
+      - "regular-1.31"
       securityContext:
         privileged: true
       resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
         requests:
           memory: "9000Mi"
           cpu: 2000m
 
-- name: ci-kubernetes-e2e-kubeadm-kinder-1-21
+- name: ci-kubernetes-e2e-kubeadm-kinder-1-30
+  cluster: eks-prow-build-cluster
   interval: 12h
   decorate: true
   labels:
     preset-dind-enabled: "true"
     preset-kind-volume-mounts: "true"
   annotations:
-    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.21-informing
-    testgrid-tab-name: kubeadm-kinder-1-21
+    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.30-informing
+    testgrid-tab-name: kubeadm-kinder-1-30
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io, release-team@kubernetes.io
     description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster and run kubeadm-e2e and the conformance suite"
     testgrid-num-columns-recent: "20"
@@ -140,7 +153,7 @@ periodics:
   extra_refs:
   - org: kubernetes
     repo: kubernetes
-    base_ref: release-1.21
+    base_ref: release-1.30
     path_alias: k8s.io/kubernetes
   - org: kubernetes
     repo: kubeadm
@@ -148,28 +161,32 @@ periodics:
     path_alias: k8s.io/kubeadm
   spec:
     containers:
-    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-1.21
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-1.30
       command:
       - runner.sh
       - "../kubeadm/kinder/ci/kinder-run.sh"
       args:
-      - "regular-1.21"
+      - "regular-1.30"
       securityContext:
         privileged: true
       resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
         requests:
           memory: "9000Mi"
           cpu: 2000m
 
-- name: ci-kubernetes-e2e-kubeadm-kinder-1-20
+- name: ci-kubernetes-e2e-kubeadm-kinder-1-29
+  cluster: eks-prow-build-cluster
   interval: 12h
   decorate: true
   labels:
     preset-dind-enabled: "true"
     preset-kind-volume-mounts: "true"
   annotations:
-    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.20-informing
-    testgrid-tab-name: kubeadm-kinder-1-20
+    testgrid-dashboards: sig-cluster-lifecycle-kubeadm, sig-release-1.29-informing
+    testgrid-tab-name: kubeadm-kinder-1-29
     testgrid-alert-email: sig-cluster-lifecycle-kubeadm-alerts@kubernetes.io, release-team@kubernetes.io
     description: "OWNER: sig-cluster-lifecycle (kinder); Uses kubeadm/kinder to create a cluster and run kubeadm-e2e and the conformance suite"
     testgrid-num-columns-recent: "20"
@@ -180,7 +197,7 @@ periodics:
   extra_refs:
   - org: kubernetes
     repo: kubernetes
-    base_ref: release-1.20
+    base_ref: release-1.29
     path_alias: k8s.io/kubernetes
   - org: kubernetes
     repo: kubeadm
@@ -188,15 +205,18 @@ periodics:
     path_alias: k8s.io/kubeadm
   spec:
     containers:
-    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211208-9473f90198-1.20
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-1.29
       command:
       - runner.sh
       - "../kubeadm/kinder/ci/kinder-run.sh"
       args:
-      - "regular-1.20"
+      - "regular-1.29"
       securityContext:
         privileged: true
       resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
         requests:
           memory: "9000Mi"
           cpu: 2000m

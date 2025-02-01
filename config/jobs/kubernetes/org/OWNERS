@@ -2,17 +2,16 @@
 
 reviewers:
 - cblecker
-- fejta
 - idvoretskyi
 - mrbobbytables
 - nikhita
-- spiffxp
 approvers:
 - cblecker
-- fejta
 - idvoretskyi
 - mrbobbytables
 - nikhita
+emeritus_approvers:
+- fejta
 - spiffxp
 labels:
 - sig/contributor-experience

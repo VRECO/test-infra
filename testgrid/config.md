@@ -21,10 +21,6 @@ Most of these objects are simply listed in a [YAML config file][configuration] f
 If you just have a [Prow job](/prow/jobs.md) configuration you want to appear in an existing
 dashboard, add annotations to that Prow job.
 
-If it's a Prow job in [the k8s.io instance](/config/jobs), you don't need to do anything else.
-
-If it's a Prow job in another instance of Prow, use [`transfigure`](cmd/transfigure).
-
 Add this to your Prow job:
 
 ```yaml
@@ -43,12 +39,16 @@ annotations:
   testgrid-in-cell-metric: coverage        # optionally, text property metric value to be evaluated, with the resulting
                                            # numeric value placed visually inside the test result cells.
   testgrid-base-options: base-options      # optionally, sets 'base_options' tab option.
+  testgrid-create-test-group: "true"       # optionally, force a test group to be created even if it's not immediately
+                                           # part of a dashboard (because it's configured somewhere else). Currently
+                                           # defaults to "false".
 ```
 
-This functionality is provided by [Configurator](cmd/configurator). If you have Prow jobs in a _different_
-instance of Prow, you may want to use [Transfigure](cmd/transfigure) instead.
+This functionality is provided by [Configurator](cmd/configurator). If you have Prow jobs in a new
+instance of Prow, you may also have to set up [Config Merger](./merging.md) also.
 
-If you need to create a new dashboard, or do anything more advanced, read on.
+This is sufficient for TestGrid and Prow. If you're using TestGrid independently of Prow,
+read on.
 
 ## Configuration
 
@@ -132,7 +132,7 @@ Ex:
 ```yaml
 test_groups:
 - name: {test_group_name}
-  gcs_prefix: kubernetes-jenkins/logs/{test_group_name}
+  gcs_prefix: kubernetes-ci-logs/logs/{test_group_name}
 ```
 
 See the `TestGroup` message in [`config.proto`] for additional fields to
@@ -185,7 +185,7 @@ dashboard_groups:
 
 ## Testing your configuration
 
-Run [`bazel test //config/tests/testgrids/..`](/config/tests/testgrids) to ensure the configuration is valid.
+Run [`go test ./config/tests/testgrids`](/config/tests/testgrids) to ensure the configuration is valid.
 
 ## Advanced configuration
 
@@ -198,7 +198,7 @@ Specify `days_of_results` in a test group to increase or decrease the number of 
 ```yaml
 test_groups:
 - name: kubernetes-build
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-build
+  gcs_prefix: kubernetes-ci-logs/logs/ci-kubernetes-build
   days_of_results: 7
 ```
 
@@ -273,12 +273,10 @@ for your test group. Example:
 test_groups:
 - name: ci-kubernetes-e2e-gce-ubuntudev-k8sdev-default
   gcs_prefix:
-  kubernetes-jenkins/logs/ci-kubernetes-e2e-gce-ubuntudev-k8sdev-default
+  kubernetes-ci-logs/logs/ci-kubernetes-e2e-gce-ubuntudev-k8sdev-default
   column_header:
-  - configuration_value: node_os_image
-  - configuration_value: master_os_image
   - configuration_value: Commit
-  - configuration_value: infra-commit
+  - configuration_value: my_custom_key
 ```
 
 ### Email alerts
@@ -307,7 +305,7 @@ runs).
 # haven't run in the last day.
 test_groups:
 - name: ci-kubernetes-e2e-gce
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-e2e-gce
+  gcs_prefix: kubernetes-ci-logs/logs/ci-kubernetes-e2e-gce
   alert_stale_results_hours: 24
   num_failures_to_alert: 3
 
@@ -340,7 +338,7 @@ If you run multiple versions of a test against different parameters, show which 
 ```yaml
 # Show a test case as "{test_case_name} [{Context}]"
 - name: ci-kubernetes-node-kubelet-benchmark
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-node-kubelet-benchmark
+  gcs_prefix: kubernetes-ci-logs/logs/ci-kubernetes-node-kubelet-benchmark
   test_name_config:
     name_elements:
     - target_config: Tests name
@@ -394,7 +392,7 @@ or
 ```yaml
 test_groups:  # Attach to a specific test_group
 - name: kubernetes-build
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-build
+  gcs_prefix: kubernetes-ci-logs/logs/ci-kubernetes-build
   notifications:
   - summary: Hello world (first notification)
   - summary: Tests are failing to start (second notification).
@@ -409,7 +407,7 @@ TestGrid uses this to calculate things like 'is this test stale?' (and hides the
 ```yaml
 test_groups:
 - name: kubernetes-build
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-build
+  gcs_prefix: kubernetes-ci-logs/logs/ci-kubernetes-build
   num_columns_recent: 3
 ```
 
@@ -434,7 +432,7 @@ be shown if we have data for them. If you want to have these not show up, add:
 ```yaml
 test_groups:
 - name: kubernetes-build
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-build
+  gcs_prefix: kubernetes-ci-logs/logs/ci-kubernetes-build
   ignore_pending: true
 ```
 
@@ -445,7 +443,7 @@ Specify `short_text_metric` to display a custom numeric metric in the TestGrid c
 ```yaml
 test_groups:
 - name: ci-kubernetes-coverage-conformance
-  gcs_prefix: kubernetes-jenkins/logs/ci-kubernetes-coverage-conformance
+  gcs_prefix: kubernetes-ci-logs/logs/ci-kubernetes-coverage-conformance
   short_text_metric: coverage
 ```
 

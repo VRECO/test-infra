@@ -2,6 +2,7 @@
 periodics:
 
 - name: ci-kubernetes-e2e-kubeadm-kinder-no-addons-latest
+  cluster: eks-prow-build-cluster
   interval: 12h
   decorate: true
   labels:
@@ -28,15 +29,18 @@ periodics:
     path_alias: k8s.io/kubeadm
   spec:
     containers:
-    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+    - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20250121-4aed057712-master
       command:
       - runner.sh
       - "../kubeadm/kinder/ci/kinder-run.sh"
       args:
-      - "upgrade-latest-no-addon-config-maps"
+      - "upgrade-no-addon-config-maps-latest"
       securityContext:
         privileged: true
       resources:
+        limits:
+          memory: "9000Mi"
+          cpu: 2000m
         requests:
           memory: "9000Mi"
           cpu: 2000m

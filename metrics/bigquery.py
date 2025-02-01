@@ -30,6 +30,7 @@ import requests
 import ruamel.yaml as yaml
 
 BACKFILL_DAYS = 30
+DEFAULT_JQ_BIN = '/usr/bin/jq'
 
 def check(cmd, **kwargs):
     """Logs and runs the command, raising on errors."""
@@ -57,7 +58,7 @@ def validate_metric_name(name):
         raise ValueError(name)
 
 
-def do_jq(jq_filter, data_filename, out_filename, jq_bin='jq'):
+def do_jq(jq_filter, data_filename, out_filename, jq_bin=DEFAULT_JQ_BIN):
     """Executes jq on a file and outputs the results to a file."""
     with open(out_filename, 'w') as out_file:
         check([jq_bin, jq_filter, data_filename], stdout=out_file)
@@ -191,11 +192,16 @@ if __name__ == '__main__':
         '--config', action='append', help='YAML file describing a metric.')
     PARSER.add_argument(
         '--project',
-        default='k8s-gubernator',
+        default='kubernetes-public',
         help='Charge the specified account for bigquery usage.')
     PARSER.add_argument(
         '--bucket',
         help='Upload results to the specified gcs bucket.')
+    PARSER.add_argument(
+        '--jq',
+        help='path to jq binary')
 
     ARGS = PARSER.parse_args()
+    if ARGS.jq:
+        DEFAULT_JQ_BIN = ARGS.jq
     main(ARGS.config, ARGS.project, ARGS.bucket)
