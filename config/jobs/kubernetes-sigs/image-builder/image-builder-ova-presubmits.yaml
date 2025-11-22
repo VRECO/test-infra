@@ -1,27 +1,31 @@
 presubmits:
   kubernetes-sigs/image-builder:
     - name: pull-ova-all
+      cluster: k8s-infra-prow-build
       labels:
         preset-dind-enabled: "true"
         preset-kind-volume-mounts: "true"
-        preset-cluster-api-provider-vsphere-e2e-config: "true"
-        preset-cloud-provider-vsphere-e2e-config: "true"
-      decorate: true
+        preset-gcve-e2e-config: "true"
       optional: true
+      decorate: true
       decoration_config:
-        timeout: 1h
+        timeout: 2h
       run_if_changed: 'images/capi/(Makefile|ansible\.cfg)|images/capi/ansible/.*|images/capi/scripts/ci-ova\.sh|images/capi/packer/(config|goss|ova)/.*|images/capi/hack/ensure-(ansible|packer|goss).*'
       path_alias: sigs.k8s.io/image-builder
       max_concurrency: 3
       spec:
         containers:
-          - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+          - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20251029-79c2132152-master
             args:
               - runner.sh
               - "./images/capi/scripts/ci-ova.sh"
             resources:
               requests:
                 cpu: "1000m"
+                memory: "4Gi"
+              limits:
+                cpu: "1000m"
+                memory: "4Gi"
             securityContext:
               privileged: true
               capabilities:

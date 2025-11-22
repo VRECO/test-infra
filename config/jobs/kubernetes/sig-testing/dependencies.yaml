@@ -21,7 +21,7 @@ presubmits:
       - name: main
         command:
         - runner.sh
-        image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+        image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251021-e2c2c9806f-master
         args:
         - make
         - verify
@@ -43,8 +43,6 @@ presubmits:
     cluster: k8s-infra-prow-build
     path_alias: "k8s.io/kubernetes"
     decorate: true
-    skip_branches:
-    - release-\d+.\d+ # per-release job
     annotations:
       testgrid-num-failures-to-alert: '10'
       testgrid-alert-stale-results-hours: '24'
@@ -60,7 +58,7 @@ presubmits:
       - name: main
         command:
         - runner.sh
-        image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-go-canary
+        image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251021-e2c2c9806f-go-canary
         args:
         - make
         - verify

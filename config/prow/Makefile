@@ -26,21 +26,26 @@ ZONE_BUILD    ?= us-central1-f
 JOB_NAMESPACE ?= test-pods
 
 update-config: get-cluster-credentials
-	kubectl create configmap config --from-file=config.yaml=config.yaml --dry-run -o yaml | kubectl replace configmap config -f -
+	kubectl create configmap config --from-file=config.yaml=config.yaml --dry-run=client -o yaml | kubectl replace configmap config -f -
 
 update-plugins: get-cluster-credentials
-	kubectl create configmap plugins --from-file=plugins.yaml=plugins.yaml --dry-run -o yaml | kubectl replace configmap plugins -f -
+	kubectl create configmap plugins --from-file=plugins.yaml=plugins.yaml --dry-run=client -o yaml | kubectl replace configmap plugins -f -
 
 deploy-prow: get-cluster-credentials
-	kubectl apply -f ./cluster/prowjob-crd/legacy/prowjob-schemaless_customresourcedefinition.yaml
+	kubectl apply --server-side=true -f ./cluster/prowjob-crd/prowjob_customresourcedefinition.yaml
 	kubectl apply -f ./cluster/
+
+	# Temporary solution for working around the issue of KES being flaky, see
+	# https://github.com/kubernetes/test-infra/issues/24869#issuecomment-1147530320.
+	# TODO(chaodaiG): remove this once the above issue is fixed.
+	kubectl -n default rollout restart deployment kubernetes-external-secrets
 
 deploy-build: get-build-cluster-credentials
 	kubectl apply -f ./cluster/build/
 
-deploy-monitoring: get-cluster-credentials
-	$(MAKE) -C ./cluster/monitoring apply
+deploy-all: deploy-prow deploy-build
 
-deploy-all: deploy-prow deploy-build deploy-monitoring
+.PHONY: update-config update-plugins deploy-prow deploy-build deploy-all
 
-.PHONY: update-config update-plugins deploy-prow deploy-build deploy-monitoring deploy-all
+# The targets below are for breaking glass usages, should not run on a regular
+# basis

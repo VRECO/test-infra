@@ -5,10 +5,19 @@
     {%- if cloud == "aws" %}
     preset-service-account: "true"
     preset-aws-ssh: "true"
-    preset-aws-credential: "true"
+    {%- if not boskos_resource_type %}
+    preset-k8s-kops-aws-credential: "true"
+    {%- endif %}
+    {%- elif cloud == "azure" %}
+    preset-service-account: "true"
+    preset-kops-azure-cred-wi: "true"
     {%- else %}
     preset-k8s-ssh: "true"
     {%- endif %}
+    {%- if storage_e2e_cred %}
+    preset-storage-e2e-service-account: "true"
+    {%- endif %}
+  cluster: {{build_cluster}}
   decorate: true
   decoration_config:
     timeout: {{job_timeout}}
@@ -21,6 +30,8 @@
   spec:
     {%- if cloud == "gce" %}
     serviceAccountName: k8s-kops-test
+    {%- elif cloud == "azure" %}
+    serviceAccountName: azure
     {%- endif %}
     containers:
     - command:
@@ -34,15 +45,24 @@
           -v 2 \
           --up --down \
           --cloud-provider={{cloud}} \
+          {%- if cloud == "gce" %}
+          --admin-access=0.0.0.0/0 \
+          {%- endif %}
           --create-args="{{create_args}}" \
           {%- if cp_ig_overrides %}
           --control-plane-instance-group-overrides="{{ cp_ig_overrides }}" \
+          {%- endif %}
+          {%- if cluster_name %}
+          --cluster-name="{{ cluster_name }}" \
           {%- endif %}
           {%- if node_ig_overrides %}
           --node-instance-group-overrides="{{ node_ig_overrides }}" \
           {%- endif %}
           {%- if kops_feature_flags %}
           --env=KOPS_FEATURE_FLAGS={{kops_feature_flags}} \
+          {%- endif %}
+          {%- if kubernetes_feature_gates %}
+          --kubernetes-feature-gates={{ kubernetes_feature_gates }} \
           {%- endif %}
           --kops-version-marker={{kops_deploy_url}} \
           {%- if publish_version_marker %}
@@ -60,10 +80,13 @@
           {%- endif %}
           --test=kops \
           -- \
-          --ginkgo-args="--debug" \
-          --test-args="-test.timeout={{test_timeout}} -num-nodes=0" \
-          {%- if test_package_bucket %}
-          --test-package-bucket={{test_package_bucket}} \
+          {%- if test_args %}
+          --test-args="-test.timeout={{test_timeout}} {{ test_args }}" \
+          {%- else %}
+          --test-args="-test.timeout={{test_timeout}}" \
+          {%- endif %}
+          {%- if test_package_url %}
+          --test-package-url={{test_package_url}} \
           {%- endif %}
           {%- if test_package_dir %}
           --test-package-dir={{test_package_dir}} \
@@ -77,10 +100,12 @@
           {%- endif %}
           --parallel={{test_parallelism}}
       env:
+      {%- if cloud != "azure" %}
       - name: KUBE_SSH_KEY_PATH
         value: {{kops_ssh_key_path}}
       - name: KUBE_SSH_USER
         value: {{kops_ssh_user}}
+      {%- endif %}
       {%- for key, val in env.items() %}
       - name: {{ key }}
         value: "{{ val }}"
@@ -89,7 +114,8 @@
       imagePullPolicy: Always
       resources:
         limits:
-          memory: 3Gi
+          cpu: "4"
+          memory: 6Gi
         requests:
-          cpu: "2"
-          memory: 3Gi
+          cpu: "4"
+          memory: 6Gi

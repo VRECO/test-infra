@@ -1,13 +1,19 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
-- amwat
 - mikedanese
 - jpbetz
+- jprzychodzen
+- mmamczur
+- YifeiZhuang
 approvers:
-- amwat
 - mikedanese
 - jpbetz
+- jprzychodzen
+- mmamczur
+- YifeiZhuang
+emeritus_approvers:
+- amwat
 labels:
 - sig/cloud-provider
 - area/provider/gcp

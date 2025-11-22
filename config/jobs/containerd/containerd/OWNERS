@@ -1,14 +1,10 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
-- yujuhong
-- Random-Liu
-- dchen1107
-- dims
-- mikebrow
+  - sig-node-test-reviewers
 approvers:
-- yujuhong
-- Random-Liu
-- dchen1107
-- dims
-- mikebrow
+  - sig-node-leads
+  - sig-node-test-approvers
+  - samuelkarp
+labels:
+  - sig/node

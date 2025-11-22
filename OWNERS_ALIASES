@@ -1,35 +1,19 @@
 aliases:
   # business hours oncall for prow etc (https://go.k8s.io/oncall)
   test-infra-oncall:
-  - chaodaiG
+  - airbornepony
   - chases2
   - cjwagner
-  - e-blackwelder
-  - fejta
-  - listx
   - michelle192837
   - mpherman2
-
-  # https://github.com/kubernetes/sig-release/blob/master/release-managers.md#build-admins
-  build-admins:
-    - amwat
-    - BenTheElder
-    - MushuEE
-    - spiffxp
-
-  sig-k8s-infra-oncall:
-  - BenTheElder
-  # kubernetes.io org admins
-  - ameukam
-  - dims
-  - spiffxp
-  - thockin
+  - timwangmusic
 
   # copied from git.k8s.io/community/OWNERS_ALIASES
   sig-api-machinery-leads:
     - deads2k
     - fedebongio
-    - lavalamp
+    - jpbetz
+    - sttts
   sig-apps-leads:
     - janetkuo
     - kow3ns
@@ -46,71 +30,87 @@ aliases:
     - ritazh
   sig-autoscaling-leads:
     - gjtempleton
-    - mwielgus
+    - maciekpytel
   sig-cli-leads:
-    - KnVerey
+    - ardaguclu
     - eddiezane
-    - seans3
+    - mpuckett159
     - soltysh
   sig-cloud-provider-leads:
-    - andrewsykim
+    - bridgetkromhout
     - cheftako
+    - elmiko
   sig-cluster-lifecycle-leads:
     - fabriziopandini
     - justinsb
     - neolit123
     - vincepri
   sig-contributor-experience-leads:
-    - alisondy
-    - cblecker
-    - mrbobbytables
-    - nikhita
+    - MadhavJivrajani
+    - Priyankasaggu11929
+    - kaslin
+    - mfahlandt
+    - palnabarun
+  sig-contributor-experience-technical-leads:
+    - MadhavJivrajani
+    - Priyankasaggu11929
   sig-docs-leads:
     - divya-mohan0209
-    - jimangel
-    - kbhawkey
-    - onlydole
-    - sftim
+    - katcosgrove
+    - natalisucks
+    - reylejano
+    - salaxander
+    - tengqm
+  sig-etcd-leads:
+    - ahrtr
+    - jmhbnz
+    - serathius
+    - wenjiaswe
   sig-instrumentation-leads:
-    - brancz
     - dashpole
-    - ehashman
-    - logicalhan
+    - dgrisonnet
+    - rexagod
+    - richabanker
   sig-k8s-infra-leads:
     - ameukam
-    - dims
-    - spiffxp
-    - thockin
+    - GenPage
+    - hakman
+    - upodroid
+    - xmudrii
   sig-multicluster-leads:
     - jeremyot
-    - pmorie
+    - skitt
   sig-network-leads:
-    - caseydavenport
-    - dcbw
+    - aojea
+    - danwinship
+    - mikezappa87
+    - shaneutt
     - thockin
   sig-node-leads:
+    - SergeyKanzhelev
     - dchen1107
     - derekwaynecarr
+    - haircommander
+    - mrunalp
   sig-release-leads:
+    - Verolop
     - cpanato
     - jeremyrickard
     - justaugustus
     - puerco
     - saschagrunert
   sig-scalability-leads:
-    - mm4tt
+    - marseel
     - shyamjvs
     - wojtek-t
   sig-scheduling-leads:
-    - Huang-Wei
-    - ahg-g
-    - alculquicondor
+    - dom4ha
+    - macsko
+    - sanposhiho
   sig-security-leads:
     - IanColdwater
+    - cailyn-codes
     - tabbysable
-  sig-service-catalog-leads:
-    - jberkhahn
-    - jhvhs
   sig-storage-leads:
     - jsafrane
     - msau42
@@ -119,76 +119,88 @@ aliases:
   sig-testing-leads:
     - BenTheElder
     - alvaroaleman
+    - aojea
     - cjwagner
-    - spiffxp
-    - stevekuznetsov
+    - jbpratt
+    - michelle192837
+    - pohly
+    - xmcqueen
   sig-ui-leads:
     - floreks
     - maciaszczykm
     - shu-mutou
-  sig-usability-leads:
-    - hpandeycodeit
-    - morengab
-    - tashimi
   sig-windows-leads:
+    - aravindhp
     - claudiubelu
-    - jayunit100
     - jsturtevant
+    - knabben
     - marosset
-  wg-api-expression-leads:
-    - apelisse
-    - kwiesmueller
+  wg-batch-leads:
+    - kannon92
+    - mwielgus
+    - soltysh
+    - swatisehgal
   wg-data-protection-leads:
     - xing-yang
     - yuxiangqian
-  wg-iot-edge-leads:
-    - cantbewong
-    - cindyxing
-    - dejanb
-  wg-multitenancy-leads:
-    - srampal
-    - tashimi
+  wg-device-management-leads:
+    - johnbelamaric
+    - klueska
+    - pohly
+  wg-etcd-operator-leads:
+    - ahrtr
+    - hakman
+    - jberkus
+    - jmhbnz
+    - justinsb
+  wg-lts-leads:
+    - jeremyrickard
+    - liggitt
+    - micahhausler
+  wg-node-lifecycle-leads:
+    - JoelSpeed
+    - atiratree
+    - fabriziopandini
+    - haircommander
+    - humblec
+    - intUnderflow
+    - kwilczynski
+    - rthallisey
   wg-policy-leads:
     - JimBugwadia
-    - rficcaglia
-  wg-reliability-leads:
-    - deads2k
-    - stevekuznetsov
-    - wojtek-t
+    - poonam-lamba
+    - sudermanjr
+  wg-serving-leads:
+    - ArangoGutierrez
+    - Jeffwan
+    - SergeyKanzhelev
+    - terrytangyuan
   wg-structured-logging-leads:
+    - mengjiao-liu
     - pohly
-    - serathius
-  ug-big-data-leads:
-    - erikerlandson
-    - foxish
-    - liyinan926
-  ug-vmware-users-leads:
-    - brysonshepherd
-    - cantbewong
-    - mylesagray
-    - phenixblue
   committee-code-of-conduct:
-    - celestehorgan
-    - karenhchu
-    - palnabarun
-    - tpepper
-    - vllry
+    - AnaMMedina21
+    - endocrimes
+    - hlipsig
+    - jeremyrickard
+    - salaxander
   committee-security-response:
+    - SaranBalaji90
     - cjcullen
+    - cji
+    - enj
     - joelsmith
-    - lukehinds
     - micahhausler
-    - swamymsft
+    - ritazh
     - tabbysable
-    - tallclair
   committee-steering:
-    - cblecker
-    - dims
+    - BenTheElder
+    - aojea
     - justaugustus
-    - liggitt
-    - mrbobbytables
-    - parispittman
-    - tpepper
+    - pacoxu
+    - pohly
+    - saschagrunert
+    - soltysh
 ## BEGIN CUSTOM CONTENT
   provider-aws:
     - justinsb
@@ -209,6 +221,54 @@ aliases:
   provider-vmware:
     - cantbewong
     - frapposelli
+  sig-node-test-reviewers:
+    - bart0sh
+    - bobbypage
+    - ConnorDoyle
+    - dims
+    - derekwaynecarr
+    - endocrimes
+    - klueska
+    - pacoxu
+    - tallclair
+    - sjenning
+    - SergeyKanzhelev
+    - kannon92
+  sig-node-test-approvers:
+    - bart0sh
+    - Random-Liu
+    - yujuhong
+    - tallclair
+    - derekwaynecarr
+    - ConnorDoyle
+    - klueska
+    - dchen1107
+    - dims
+    - sjenning
+    - mrunalp
+    - SergeyKanzhelev
+    - endocrimes
+    - kannon92
+  sig-scheduling-reviewers:
+    - AxeZhan
+    - damemi
+    - denkensk
+    - dom4ha
+    - macsko
+    - sanposhiho
+    - utam0k
+    - kerthcet
+  sig-scheduling-approvers:
+    - ahg-g
+    - dom4ha
+    - Huang-Wei
+    - kerthcet
+    - macsko
+    - sanposhiho
+  # - emeritus
+  # - yguo0905
+  # - dashpole
+  # - ehashman
 ## END CUSTOM CONTENT
 
   # Modified from https://kubernetes.io/releases/release-managers/#release-managers
@@ -223,17 +283,24 @@ aliases:
   #   k/test-infra jobs and overall CI Signal
   #
   release-engineering-approvers:
+    - cici37 # Release Manager
     - cpanato # SIG Technical Lead / RelEng subproject owner / Release Manager
-    - jeremyrickard # SIG Technical Lead / RelEng subproject owner
+    - jeremyrickard # SIG Chair / RelEng subproject owner / Release Manager
     - justaugustus # SIG Chair / RelEng subproject owner / Release Manager
+    - palnabarun # Release Manager
     - puerco # SIG Technical Lead / RelEng subproject owner / Release Manager
     - saschagrunert # SIG Chair / RelEng subproject owner / Release Manager
+    - Verolop # SIG Technical Lead / RelEng subproject owner / Release Manager
+    - xmudrii # Release Manager
   release-engineering-reviewers:
+    - cici37 # Release Manager
     - cpanato # SIG Technical Lead / RelEng subproject owner / Release Manager
-    - jeremyrickard # SIG Technical Lead / RelEng subproject owner
+    - jeremyrickard # SIG Chair / RelEng subproject owner / Release Manager
     - justaugustus # SIG Chair / RelEng subproject owner / Release Manager
+    - palnabarun # Release Manager
     - puerco # SIG Technical Lead / RelEng subproject owner / Release Manager
     - saschagrunert # SIG Chair / RelEng subproject owner / Release Manager
+    - Verolop # SIG Technical Lead / RelEng subproject owner / Release Manager
     - xmudrii # Release Manager
 
   # copied from git.k8s.io/enhancements/OWNERS_ALIASES
@@ -248,42 +315,12 @@ aliases:
     - justaugustus # subproject owner
     - mrbobbytables # subproject owner
 
-  # copied from sigs.k8s.io/cluster-api-provider-vsphere/OWNERS_ALIASES
-  cluster-api-admins:
-    - detiber
-    - justinsb
-    - davidewatson
-    - vincepri
-  cluster-api-vsphere-maintainers:
-    - frapposelli
-    - yastij
-    - randomvariable
-  # end sigs.k8s.io/cluster-api-provider-vsphere/OWNERS_ALIASES
-
-  # mostly copied from sigs.k8s.io/controller-runtime/OWNERS_ALIASES
-  controller-runtime-admins:
-  - vincepri
-  - mengqiy
-
-  controller-runtime-maintainers:
-  - vincepri
-
-  controller-runtime-approvers:
-  - gerred
-  - alvaroaleman
-
-  controller-runtime-reviewers:
-  - alenkacz
-  - vincepri
-  - alexeldeib
-
-  controller-runtime-emeritus-maintainers:
-  - pwittrock
-
   # mostly copied from sigs.k8s.io/kubebuilder/OWNERS_ALIASES
   kubebuilder-admins:
+  - camilamacedo86
   - mengqiy
   - estroz
+  - joelanford
 
   kubebuilder-reviewers:
   - alexeldeib
@@ -298,14 +335,12 @@ aliases:
     - cpanato
     - jeremyrickard
     - justaugustus
-    - listx
     - puerco
     - saschagrunert
   promo-tools-reviewers:
     - cpanato
     - jeremyrickard
     - justaugustus
-    - listx
     - puerco
     - saschagrunert
 
@@ -322,6 +357,7 @@ aliases:
     - dims
     - justaugustus
     - nikhita
+    - palnabarun
     - puerco
     - saschagrunert
     - sttts

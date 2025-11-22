@@ -2,17 +2,17 @@
 
 reviewers:
   - sig-cluster-lifecycle-leads
-  - provider-vmware
-  - cluster-api-admins
-  - cluster-api-vsphere-maintainers
-  - figo
-  - akutz
+  - chrischdi
+  - gab-satchi
+  - randomvariable
+  - sbueringer
+  - srm09
+  - yastij
 approvers:
   - sig-cluster-lifecycle-leads
-  - provider-vmware
-  - cluster-api-admins
-  - cluster-api-vsphere-maintainers
-  - figo
-  - akutz
-emeritus_reviewers:
-  - ncdc
+  - chrischdi
+  - gab-satchi
+  - randomvariable
+  - sbueringer
+  - srm09
+  - yastij

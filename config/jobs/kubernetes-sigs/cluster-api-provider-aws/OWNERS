@@ -1,34 +1,23 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
-- chuckha
-- davidewatson
-- detiber
-- d-nishi
-- enxebre
-- ingvagabund
-- kris-nova
-- luxas
-- randomvariable
-- richardcase
-- sedefsavas
-- timothysc
-- vincepri
+- luthermonson
+- cnmcavoy
+- nrb
+- faiq
+- fiunchinho
+- damdo
 approvers:
-- chuckha
-- davidewatson
-- detiber
-- d-nishi
-- enxebre
-- ingvagabund
-- kris-nova
-- luxas
-- randomvariable
 - richardcase
-- sedefsavas
-- timothysc
-- vincepri
-emeritus_reviewers:
-  - ncdc
+- Ankitasw
+- dlipovetsky
+- nrb
+- AndiDog
 emeritus_approvers:
-  - ncdc
+- chuckha
+- detiber
+- ncdc
+- randomvariable
+- rudoi
+- Skarlso
+- vincepri

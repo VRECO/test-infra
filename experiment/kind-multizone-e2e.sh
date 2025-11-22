@@ -22,8 +22,6 @@ set -o errexit -o nounset -o xtrace
 # Settings:
 # SKIP: ginkgo skip regex
 # FOCUS: ginkgo focus regex
-# GA_ONLY: true  - limit to GA APIs/features as much as possible
-#          false - (default) APIs and features left at defaults
 # 
 
 # cleanup logic for cleanup on exit
@@ -54,12 +52,20 @@ signal_handler() {
 }
 trap signal_handler INT TERM
 
-# build kubernetes / node image, e2e binaries
+# build kubernetes / node image, e2e binaries and ginkgo
 build() {
   # build the node image w/ kubernetes
   kind build node-image -v 1
+  # Ginkgo v1 is used by Kubernetes 1.24 and earlier and exists in the vendor directory.
+  # Historically it has been built with the "vendor" prefix.
+  GINKGO_TARGET="vendor/github.com/onsi/ginkgo/ginkgo"
+  if [ ! -d "$GINKGO_TARGET" ]; then
+      # If the directory doesn't exist, then we must be on Kubernetes >= 1.25 with Ginkgo V2.
+      # The "vendor" prefix is no longer needed.
+      GINKGO_TARGET="github.com/onsi/ginkgo/v2/ginkgo"
+  fi
   # make sure we have e2e requirements
-  make all WHAT='cmd/kubectl test/e2e/e2e.test vendor/github.com/onsi/ginkgo/ginkgo'
+  make all WHAT="cmd/kubectl test/e2e/e2e.test ${GINKGO_TARGET}"
 }
 
 check_structured_log_support() {
@@ -106,43 +112,22 @@ create_cluster() {
   # --runtime-config argument value passed to the API server
   runtime_config="{}"
 
-  case "${GA_ONLY:-false}" in
-  false)
-    feature_gates="{}"
-    runtime_config="{}"
-    ;;
-  true)
-    case "${KUBE_VERSION}" in
-    v1.1[0-7].*)
-      echo "GA_ONLY=true is only supported on versions >= v1.18, got ${KUBE_VERSION}"
-      exit 1
-      ;;
-    v1.18.*)
-      echo "Limiting to GA APIs and features (plus certificates.k8s.io/v1beta1 and RotateKubeletClientCertificate) for ${KUBE_VERSION}"
-      feature_gates='{"AllAlpha":false,"AllBeta":false,"RotateKubeletClientCertificate":true}'
-      runtime_config='{"api/alpha":"false", "api/beta":"false", "certificates.k8s.io/v1beta1":"true"}'
-      ;;
-    *)
-      echo "Limiting to GA APIs and features for ${KUBE_VERSION}"
-      feature_gates='{"AllAlpha":false,"AllBeta":false}'
-      runtime_config='{"api/alpha":"false", "api/beta":"false"}'
-      ;;
-    esac
-    ;;
-  *)
-    echo "\$GA_ONLY set to '${GA_ONLY}'; supported values are true and false (default)"
-    exit 1
-    ;;
-  esac
-
-  # create the config file
+  # create the config file with 2 nodes per zone
   cat <<EOF > "${ARTIFACTS}/kind-config.yaml"
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 featureGates:
   TopologyAwareHints: true
+  ServiceTrafficDistribution: true
 nodes:
 - role: control-plane
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "topology.kubernetes.io/zone=zone-a"
 - role: worker
   kubeadmConfigPatches:
   - |
@@ -163,10 +148,24 @@ nodes:
     kind: JoinConfiguration
     nodeRegistration:
       kubeletExtraArgs:
+        node-labels: "topology.kubernetes.io/zone=zone-b"
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "topology.kubernetes.io/zone=zone-c"
+- role: worker
+  kubeadmConfigPatches:
+  - |
+    kind: JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
         node-labels: "topology.kubernetes.io/zone=zone-c"
 EOF
   # NOTE: must match the number of workers above
-  NUM_NODES=2
+  NUM_NODES=6
   # actually create the cluster
   # TODO(BenTheElder): settle on verbosity for this script
   KIND_CREATE_ATTEMPTED=true
@@ -227,7 +226,6 @@ run_tests() {
   # setting this env prevents ginkgo e2e from trying to run provider setup
   export KUBERNETES_CONFORMANCE_TEST='y'
   # setting these is required to make RuntimeClass tests work ... :/
-  export KUBE_CONTAINER_RUNTIME=remote
   export KUBE_CONTAINER_RUNTIME_ENDPOINT=unix:///run/containerd/containerd.sock
   export KUBE_CONTAINER_RUNTIME_NAME=containerd
   # ginkgo can take forever to exit, so we run it in the background and save the

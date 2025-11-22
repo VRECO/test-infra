@@ -38,20 +38,27 @@ printf '%0.s=' {1..80} >&2; echo >&2
 
 cleanup(){
   if [[ "${DOCKER_IN_DOCKER_ENABLED:-false}" == "true" ]]; then
+    >&2 echo "wrapper.sh] [CLEANUP] Waiting 30 seconds for pods stopped with terminationGracePeriod:30"
+    sleep 30
     >&2 echo "wrapper.sh] [CLEANUP] Cleaning up after Docker in Docker ..."
     docker ps -aq | xargs -r docker rm -f || true
-    service docker stop || true
+    >&2 echo "wrapper.sh] [CLEANUP] Waiting for docker to stop for 30 seconds"
+    timeout 30 service docker stop || true
     >&2 echo "wrapper.sh] [CLEANUP] Done cleaning up after Docker in Docker."
   fi
 }
 
 early_exit_handler() {
   >&2 echo "wrapper.sh] [EARLY EXIT] Interrupted, entering handler ..."
-  if [ -n "${WRAPPED_COMMAND_PID:-}" ]; then
+  # if we got here before the wrapped command exited, skip, otherwise signal and wait
+  if [ -n "${WRAPPED_COMMAND_PID:-}" ] && [ -z "${EXIT_VALUE:-}" ]; then
     kill -TERM "$WRAPPED_COMMAND_PID" || true
-  fi
-  if [ -n "${EXIT_VALUE:-}" ]; then
-    >&2 echo "Original exit code was ${EXIT_VALUE}, not preserving due to interrupt signal"
+    wait $WRAPPED_COMMAND_PID
+    EXIT_VALUE=$?
+    >&2 echo "wrapper.sh] [EARLY EXIT] Exit code was ${EXIT_VALUE}, not preserving due to interrupt signal"
+  # else if we have an exit code because we already waited on the process then debug it
+  elif [ -n "${EXIT_VALUE:-}" ]; then
+    >&2 echo "wrapper.sh] [EARLY EXIT] Original exit code was ${EXIT_VALUE}, not preserving due to interrupt signal"
   fi
   cleanup
   >&2 echo "wrapper.sh] [EARLY EXIT] Completed handler ..."
@@ -60,34 +67,17 @@ early_exit_handler() {
 
 trap early_exit_handler TERM INT
 
-# optionally enable ipv6 docker
-export DOCKER_IN_DOCKER_IPV6_ENABLED=${DOCKER_IN_DOCKER_IPV6_ENABLED:-false}
-if [[ "${DOCKER_IN_DOCKER_IPV6_ENABLED}" == "true" ]]; then
-  >&2 echo "wrapper.sh] [SETUP] Enabling IPv6 in Docker config ..."
+# Check if the job has opted-in to docker-in-docker
+export DOCKER_IN_DOCKER_ENABLED=${DOCKER_IN_DOCKER_ENABLED:-false}
+if [[ "${DOCKER_IN_DOCKER_ENABLED}" == "true" ]]; then
+  >&2 echo "wrapper.sh] [SETUP] Docker in Docker enabled, initializing ..."
   # enable ipv6
   sysctl net.ipv6.conf.all.disable_ipv6=0
   sysctl net.ipv6.conf.all.forwarding=1
   # enable ipv6 iptables
   modprobe -v ip6table_nat
-  >&2 echo "wrapper.sh] [SETUP] Done enabling IPv6 in Docker config."
-fi
-
-# optionally enable iptables-nft
-export DOCKER_IN_DOCKER_NFT_ENABLED=${DOCKER_IN_DOCKER_NFT_ENABLED:-false}
-if [[ "${DOCKER_IN_DOCKER_NFT_ENABLED}" == "true" ]]; then
-  >&2 echo "wrapper.sh] [SETUP] Enabling iptables-nft ..."
-  # enable iptables-nft
-  update-alternatives --set iptables /usr/sbin/iptables-nft
-  update-alternatives --set ip6tables /usr/sbin/ip6tables-nft
-  # enable nft iptables module
-  modprobe -v nf_tables
-  >&2 echo "wrapper.sh] [SETUP] Done enabling iptables-nft by default."
-fi
-
-# Check if the job has opted-in to docker-in-docker
-export DOCKER_IN_DOCKER_ENABLED=${DOCKER_IN_DOCKER_ENABLED:-false}
-if [[ "${DOCKER_IN_DOCKER_ENABLED}" == "true" ]]; then
-  >&2 echo "wrapper.sh] [SETUP] Docker in Docker enabled, initializing ..."
+  # Fix ulimit issue
+  sed -i 's|ulimit -Hn|ulimit -n|' /etc/init.d/docker || true
   # If we have opted in to docker in docker, start the docker daemon,
   service docker start
   # the service can be started but the docker socket not ready, wait for ready

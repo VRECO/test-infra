@@ -24,7 +24,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -37,9 +36,10 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+
+	cryptorand "crypto/rand"
 
 	"golang.org/x/crypto/ssh"
 
@@ -160,9 +160,6 @@ type kops struct {
 
 	// featureFlags is a list of feature flags to enable, comma delimited
 	featureFlags string
-
-	// multipleZones denotes using more than one zone
-	multipleZones bool
 }
 
 var _ deployer = kops{}
@@ -191,7 +188,7 @@ func migrateKopsEnv() error {
 }
 
 func newKops(provider, gcpProject, cluster string) (*kops, error) {
-	tmpdir, err := ioutil.TempDir("", "kops")
+	tmpdir, err := os.MkdirTemp("", "kops")
 	if err != nil {
 		return nil, err
 	}
@@ -476,6 +473,7 @@ func (k kops) Up() error {
 	if len(featureFlags) != 0 {
 		os.Setenv("KOPS_FEATURE_FLAGS", strings.Join(featureFlags, ","))
 	}
+	os.Setenv("KOPS_RUN_TOO_NEW_VERSION", "1")
 
 	createArgs = append(createArgs, "--yes")
 
@@ -547,7 +545,7 @@ func (k kops) DumpClusterLogs(localPath, gcsPath string) error {
 	if strings.HasPrefix(privateKeyPath, "~/") {
 		privateKeyPath = filepath.Join(os.Getenv("HOME"), privateKeyPath[2:])
 	}
-	key, err := ioutil.ReadFile(privateKeyPath)
+	key, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return fmt.Errorf("error reading private key %q: %w", k.sshPrivateKey, err)
 	}
@@ -677,7 +675,8 @@ func (k kops) BuildTester(o *e2e.BuildTesterOptions) (e2e.Tester, error) {
 		t.KubeMasterURL = kubecfg.Clusters[0].Cluster.Server
 	}
 
-	if k.provider == "gce" {
+	switch k.provider {
+	case "gce":
 		t.GCEProject = k.gcpProject
 		if len(k.zones) > 0 {
 			zone := k.zones[0]
@@ -690,7 +689,7 @@ func (k kops) BuildTester(o *e2e.BuildTesterOptions) (e2e.Tester, error) {
 			}
 			t.GCERegion = zone[0:lastDash]
 		}
-	} else if k.provider == "aws" {
+	case "aws":
 		if len(k.zones) > 0 {
 			zone := k.zones[0]
 			// These GCE fields are actually provider-agnostic
@@ -805,13 +804,14 @@ func getRandomAWSZones(masterCount int, multipleZones bool) ([]string, error) {
 
 	// TODO(chrislovecnm): get the number of ec2 instances in the region and ensure that there are not too many running
 	for _, i := range rand.Perm(len(awsRegions)) {
-		ec2Session, err := getAWSEC2Session(awsRegions[i])
+		ec2Client, err := getAWSEC2Client(awsRegions[i])
 		if err != nil {
 			return nil, err
 		}
 
 		// az for a region. AWS Go API does not allow us to make a single call
-		zoneResults, err := ec2Session.DescribeAvailabilityZones(&ec2.DescribeAvailabilityZonesInput{})
+		zoneResults, err := ec2Client.DescribeAvailabilityZones(context.TODO(),
+			&ec2.DescribeAvailabilityZonesInput{})
 		if err != nil {
 			return nil, fmt.Errorf("unable to call aws api DescribeAvailabilityZones for %q: %w", awsRegions[i], err)
 		}
@@ -835,19 +835,15 @@ func getRandomAWSZones(masterCount int, multipleZones bool) ([]string, error) {
 	return nil, fmt.Errorf("unable to find region with %d zones", masterCount)
 }
 
-// getAWSEC2Session creates an returns a EC2 API session.
-func getAWSEC2Session(region string) (*ec2.EC2, error) {
-	config := aws.NewConfig().WithRegion(region)
-
-	// This avoids a confusing error message when we fail to get credentials
-	config = config.WithCredentialsChainVerboseErrors(true)
-
-	s, err := session.NewSession(config)
+// getAWSEC2Client creates and returns a EC2 Client
+func getAWSEC2Client(region string) (*ec2.Client, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(region))
 	if err != nil {
-		return nil, fmt.Errorf("unable to build aws API session with region: %q: %w", region, err)
+		return nil, fmt.Errorf("unable to load default config with region: %q: %w", region, err)
 	}
 
-	return ec2.New(s, config), nil
+	ec2Client := ec2.NewFromConfig(cfg)
+	return ec2Client, nil
 }
 
 // kubeconfig is a simplified version of the kubernetes Config type
@@ -878,15 +874,15 @@ func parseKubeconfig(kubeconfigPath string) (*kubeconfig, error) {
 }
 
 // setupGCEStateStore is used to create a 1-off state bucket in the active GCP project
-func setupGCEStateStore(projectId string) (*string, error) {
+func setupGCEStateStore(projectID string) (*string, error) {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error building storage API client: %w", err)
 	}
-	name := gceBucketName(projectId)
+	name := gceBucketName(projectID)
 	bkt := client.Bucket(name)
-	if err := bkt.Create(ctx, projectId, nil); err != nil {
+	if err := bkt.Create(ctx, projectID, nil); err != nil {
 		return nil, err
 	}
 	log.Printf("Created new GCS bucket for state store: %s\n.", name)
@@ -895,9 +891,9 @@ func setupGCEStateStore(projectId string) (*string, error) {
 }
 
 // gceBucketName generates a name for GCE state store bucket
-func gceBucketName(projectId string) string {
+func gceBucketName(projectID string) string {
 	b := make([]byte, 2)
-	rand.Read(b)
+	cryptorand.Read(b)
 	s := hex.EncodeToString(b)
-	return strings.Join([]string{projectId, "state", s}, "-")
+	return strings.Join([]string{projectID, "state", s}, "-")
 }

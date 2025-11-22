@@ -24,17 +24,15 @@ SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
 readonly OUTPUT="${SCRIPT_DIR}/sig-k8s-infra-apps.yaml"
 # list of subdirs in kubernetes/k8s.io/apps
 readonly APPS=(
-    elekto
-    gcsweb
-    kettle
-    k8s-io
-    kubernetes-external-secrets
-    perfdash
-    prow
-    publishing-bot
-    sippy
-    slack-infra
-    triageparty-release
+  codesearch
+  elekto
+  gcsweb
+  kettle
+  k8s-io
+  kubernetes-external-secrets
+  perfdash
+  publishing-bot
+  slack-infra
 )
 
 cat >"${OUTPUT}" <<EOF
@@ -45,7 +43,7 @@ postsubmits:
 EOF
 
 for app in "${APPS[@]}"; do
-    cat >>"${OUTPUT}" <<EOF
+  cat >>"${OUTPUT}" <<EOF
     - name: post-k8sio-deploy-app-${app}
       cluster: k8s-infra-prow-build-trusted
       decorate: true
@@ -72,7 +70,6 @@ for app in "${APPS[@]}"; do
         testgrid-num-failures-to-alert: '1'
       rerun_auth_config:
         github_team_slugs:
-        # proxy for sig-k8s-infra-oncall
         - org: kubernetes
           slug: sig-k8s-infra-leads
         # proxy for test-infra-oncall

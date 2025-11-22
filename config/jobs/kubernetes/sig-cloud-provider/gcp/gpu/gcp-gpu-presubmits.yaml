@@ -3,13 +3,16 @@ presets:
     preset-pull-gce-device-plugin-gpu: "true"
   env:
   - name: NODE_ACCELERATORS
-    value: type=nvidia-tesla-k80,count=2
+    value: type=nvidia-tesla-t4,count=4
   - name: CREATE_CUSTOM_NETWORK
     value: "true"
+  - name: NODE_SIZE
+    value: n1-standard-2
 
 presubmits:
   kubernetes/kubernetes:
   - name: pull-kubernetes-e2e-gce-device-plugin-gpu
+    cluster: k8s-infra-prow-build
     skip_branches:
     - release-\d+\.\d+
     annotations:
@@ -18,38 +21,44 @@ presubmits:
     optional: true
     max_concurrency: 5
     labels:
-      preset-service-account: "true"
       preset-k8s-ssh: "true"
       preset-dind-enabled: "true"
-      preset-pull-kubernetes-e2e: "true"
-      preset-pull-gce-device-plugin-gpu: "true"
+    decorate: true
+    decoration_config:
+      timeout: 90m
+    path_alias: k8s.io/kubernetes
     spec:
+      serviceAccountName: prow-build
       containers:
-      - image: gcr.io/k8s-staging-test-infra/kubekins-e2e:v20211217-ea95cec1d4-master
+      - image: us-central1-docker.pkg.dev/k8s-staging-test-infra/images/kubekins-e2e:v20251021-e2c2c9806f-master
+        command:
+        - runner.sh
+        - kubetest2
+        - gce
         args:
-        - --root=/go/src
-        - "--job=$(JOB_NAME)"
-        - "--repo=k8s.io/$(REPO_NAME)=$(PULL_REFS)"
-        - "--repo=k8s.io/release"
-        - "--service-account=/etc/service-account/service-account.json"
-        - "--upload=gs://kubernetes-jenkins/pr-logs"
-        - "--timeout=90"
-        - --scenario=kubernetes_e2e
+        - --v=9
+        - --legacy-mode
+        - --build
+        - --up
+        - --down
+        - --node-size=n1-standard-2
+        - --num-nodes=2
+        - --gcp-zone=us-central1-b
+        - --env=KUBE_CLUSTER_INITIALIZATION_TIMEOUT=900
+        - --boskos-resource-type=gpu-project
+        - --node-accelerators=type=nvidia-tesla-t4,count=2
+        - --test=ginkgo
         - --
-        - --build=quick
-        - --cluster=
-        - --extract=local
-        - --gcp-node-image=gci
-        - --gcp-nodes=4
-        - --gcp-project=k8s-jkns-pr-gce-gpus
-        - --gcp-zone=us-west1-b
-        - --ginkgo-parallel=30
         - --provider=gce
-        - --stage=gs://kubernetes-release-pull/ci/pull-kubernetes-e2e-gce-device-plugin-gpu
-        - --test_args=--ginkgo.focus=\[Feature:GPUDevicePlugin\] --minStartupPods=8
-        - --timeout=60m
+        - --use-built-binaries=true
+        - --test-args=--minStartupPods=8
+        - --focus-regex=\[Feature:GPUDevicePlugin\]
         resources:
+          limits:
+            cpu: 6
+            memory: "14Gi"
           requests:
-            memory: "6Gi"
+            cpu: 6
+            memory: "14Gi"
         securityContext:
           privileged: true

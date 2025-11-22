@@ -4,15 +4,19 @@ reviewers:
 - andyzhangx
 - brendandburns
 - feiskyer
-- karataliu
 - khenidak
-- chewong
+- mainred
+- nilo19
+
 approvers:
 - andyzhangx
 - brendandburns
 - feiskyer
-- karataliu
 - khenidak
+- mainred
+- nilo19
+
+emeritus_approvers:
 - chewong
 
 labels:

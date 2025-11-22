@@ -20,21 +20,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/services/authorization/mgmt/2015-07-01/authorization"
-	"github.com/Azure/azure-sdk-for-go/services/containerservice/mgmt/2019-10-01/containerservice"
-	"github.com/Azure/azure-sdk-for-go/services/preview/msi/mgmt/2015-08-31-preview/msi"
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/authorization/mgmt/authorization"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/containerservice/mgmt/containerservice"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/msi/mgmt/msi"
+	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/Azure/go-autorest/autorest/azure"
+	uuid "github.com/google/uuid"
 	"github.com/pelletier/go-toml"
-	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -250,7 +249,7 @@ type AzureStackMetadataAuthentication struct {
 	Audiences     []string `json:"audiences,omitempty"`
 }
 
-func (az *AzureClient) ValidateDeployment(ctx context.Context, resourceGroupName, deploymentName string, template, params *map[string]interface{}) (valid resources.DeploymentValidateResult, err error) {
+func (az *AzureClient) ValidateDeployment(ctx context.Context, resourceGroupName, deploymentName string, template, params *map[string]interface{}) (valid resources.DeploymentsValidateFuture, err error) {
 	return az.deploymentsClient.Validate(ctx,
 		resourceGroupName,
 		deploymentName,
@@ -316,7 +315,7 @@ func (az *AzureClient) EnsureResourceGroup(ctx context.Context, name, location s
 func (az *AzureClient) DeleteResourceGroup(ctx context.Context, groupName string) error {
 	_, err := az.groupsClient.Get(ctx, groupName)
 	if err == nil {
-		future, err := az.groupsClient.Delete(ctx, groupName)
+		future, err := az.groupsClient.Delete(ctx, groupName, "")
 		if err != nil {
 			return fmt.Errorf("cannot delete resource group %v: %w", groupName, err)
 		}
@@ -348,7 +347,11 @@ func (az *AzureClient) AssignOwnerRoleToIdentity(ctx context.Context, resourceGr
 		},
 	}
 
-	if _, err := az.authorizationClient.Create(ctx, scope, uuid.NewV1().String(), roleAssignmentParameters); err != nil {
+	uuidV1, err := uuid.NewUUID()
+	if err != nil {
+		return fmt.Errorf("failed to generate UUID: %w", err)
+	}
+	if _, err := az.authorizationClient.Create(ctx, scope, uuidV1.String(), roleAssignmentParameters); err != nil {
 		return fmt.Errorf("failed to assign 'Owner' role to user assigned identity: %w", err)
 	}
 
@@ -366,7 +369,7 @@ func getOAuthConfig(env azure.Environment, subscriptionID, tenantID string) (*ad
 }
 
 func getAzCredentials() (*Creds, error) {
-	content, err := ioutil.ReadFile(*aksCredentialsFile)
+	content, err := os.ReadFile(*aksCredentialsFile)
 	log.Printf("Reading credentials file %v", *aksCredentialsFile)
 	if err != nil {
 		return nil, fmt.Errorf("error reading credentials file %v %w", *aksCredentialsFile, err)
@@ -462,7 +465,7 @@ func populateAzureCloudConfig(isVMSS bool, credentials Creds, azureEnvironment, 
 	}
 
 	cloudConfigPath := path.Join(outputDir, "azure.json")
-	if err := ioutil.WriteFile(cloudConfigPath, cloudConfig, 0644); err != nil {
+	if err := os.WriteFile(cloudConfigPath, cloudConfig, 0644); err != nil {
 		return fmt.Errorf("cannot write Azure cloud config to file: %w", err)
 	}
 	if err := os.Setenv("CLOUD_CONFIG", cloudConfigPath); err != nil {

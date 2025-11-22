@@ -3,8 +3,8 @@ postsubmits:
     - name: post-kubernetes-push-image-etcd
       cluster: k8s-infra-prow-build-trusted
       annotations:
-        testgrid-dashboards: sig-release-releng-informing, sig-release-master-informing, sig-release-image-pushes, sig-k8s-infra-gcb
-        testgrid-alert-email: release-managers+alerts@kubernetes.io
+        testgrid-dashboards: sig-release-releng-informing, sig-release-image-pushes, sig-k8s-infra-gcb
+        testgrid-alert-email: release-managers+alerts@kubernetes.io, release-team@kubernetes.io
       decorate: true
       run_if_changed: '^cluster\/images\/etcd\/'
       branches:
@@ -14,7 +14,7 @@ postsubmits:
       spec:
         serviceAccountName: gcb-builder
         containers:
-          - image: gcr.io/k8s-staging-test-infra/image-builder:v20211014-7ca1952a94
+          - image: gcr.io/k8s-staging-test-infra/image-builder:v20251029-79c2132152
             command:
               - /run.sh
             args:
@@ -32,8 +32,8 @@ postsubmits:
     - name: post-kubernetes-push-image-pause
       cluster: k8s-infra-prow-build-trusted
       annotations:
-        testgrid-dashboards: sig-release-releng-informing, sig-release-master-informing, sig-release-image-pushes, sig-k8s-infra-gcb
-        testgrid-alert-email: release-managers+alerts@kubernetes.io
+        testgrid-dashboards: sig-release-releng-informing, sig-release-image-pushes, sig-k8s-infra-gcb
+        testgrid-alert-email: release-managers+alerts@kubernetes.io, release-team@kubernetes.io
       decorate: true
       run_if_changed: '^build\/pause\/'
       branches:
@@ -43,7 +43,7 @@ postsubmits:
       spec:
         serviceAccountName: gcb-builder
         containers:
-          - image: gcr.io/k8s-staging-test-infra/image-builder:v20211014-7ca1952a94
+          - image: gcr.io/k8s-staging-test-infra/image-builder:v20251029-79c2132152
             command:
               - /run.sh
             args:
